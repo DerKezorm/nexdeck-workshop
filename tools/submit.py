@@ -107,6 +107,10 @@ def process(ctx: Context, issue: dict[str, Any], *, force: bool = False, announc
     if not form.structured:
         return _rejected(number, digest, ["This issue is not a submission. Use the form of the New issue page to submit a card or a connection."])
 
+    if form.problems:
+        # The shape is not the form's: what was read from it cannot be trusted to say what its author meant.
+        return _rejected(number, digest, form.problems)
+
     user = issue.get("user") or {}
     author_id = int(user.get("id") or 0)
     login = str(user.get("login") or "")
