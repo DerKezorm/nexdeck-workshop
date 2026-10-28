@@ -1,6 +1,6 @@
 name: moderate
 
-# The commands of the comments: /remove (a maintainer), /withdraw (the author), /recheck (the author or a maintainer);
+# The commands of the comments: /remove and /restore (a maintainer), /withdraw (the author), /recheck (the author or a maintainer);
 # and the manual removal of an entry. The person is taken from the event, never from what a comment says.
 on:
   issue_comment:
@@ -35,7 +35,7 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event.issue.pull_request == null && github.event.comment.user.type != 'Bot' &&
-       (startsWith(github.event.comment.body, '/remove') || startsWith(github.event.comment.body, '/withdraw') || startsWith(github.event.comment.body, '/recheck')))
+       (startsWith(github.event.comment.body, '/remove') || startsWith(github.event.comment.body, '/withdraw') || startsWith(github.event.comment.body, '/restore') || startsWith(github.event.comment.body, '/recheck')))
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

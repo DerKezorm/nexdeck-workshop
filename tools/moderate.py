@@ -4,7 +4,7 @@
     python -m tools.moderate --dispatch # from the manual run: ENTRY, LEVEL and REASON in the environment
 
 ``/remove harmful|not_useful <reason>``: a maintainer takes an entry out of the shop; it stays in the catalog, marked
-removed, with the reason. ``/withdraw``: the author takes his own entry back. ``/recheck``: the submission in this issue
+removed, with the reason. ``/withdraw``: the author takes his own entry back (not one a maintainer removed). ``/restore``: a maintainer brings a removed entry back. ``/recheck``: the submission in this issue
 is judged again. The id of the person is the one of the event, never a name written in a comment.
 """
 
@@ -39,7 +39,26 @@ def remove(ctx: submit.Context, entry_id: str, level: str, reason: str) -> str |
     reason = clean(reason)[:300]
     if not reason:
         return "A removal needs a reason."
+    taken = data.get("removed")
+    if level == "withdrawn" and taken and taken.get("level") != "withdrawn":
+        # The author cannot undo what a maintainer decided, neither by withdrawing nor by an update afterwards (AC-8).
+        return f"A maintainer removed `{entry_id}`; only a maintainer can bring it back."
     data["removed"] = {"level": level, "reason": reason, "at": iso(ctx.clock)}
+    entries.save_entry(ctx.root, entry_id, data)
+    entries.refresh(ctx.root, ctx.clock)
+    return None
+
+
+def restore(ctx: submit.Context, entry_id: str) -> str | None:
+    """Takes a removal back, whatever its level. Returns what is wrong, or nothing when it is done."""
+    if not ID.match(entry_id):
+        return "That is not an entry id."
+    data = entries.load_entry(ctx.root, entry_id)
+    if data is None:
+        return f"There is no entry {entry_id}."
+    if not data.get("removed"):
+        return f"`{entry_id}` is not removed."
+    data["removed"] = None
     entries.save_entry(ctx.root, entry_id, data)
     entries.refresh(ctx.root, ctx.clock)
     return None
@@ -72,6 +91,13 @@ def handle_comment(ctx: submit.Context, event: dict[str, Any]) -> list[dict[str,
             return [_reply(number, "Only the author of an entry can withdraw it.")]
         failure = remove(ctx, entry["id"], "withdrawn", WITHDRAWN_REASON)
         return [_reply(number, failure or f"**Withdrawn.** `{entry['id']}` stays in the catalog, marked as withdrawn by the author.")]
+    if first.startswith("/restore"):
+        if sender not in ctx.maintainers:
+            return [_reply(number, "Only a maintainer can bring an entry back.")]
+        if entry is None:
+            return [_reply(number, "This issue belongs to no entry.")]
+        failure = restore(ctx, entry["id"])
+        return [_reply(number, failure or f"**Restored.** `{entry['id']}` can be installed again.")]
     return []
 
 

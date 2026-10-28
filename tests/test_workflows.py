@@ -55,5 +55,5 @@ def test_karten13_no_text_of_a_stranger_goes_into_a_command() -> None:
 def test_karten13_the_commands_of_the_comments_are_only_taken_from_people() -> None:
     condition = _load("moderate")["jobs"]["moderate"]["if"]
     assert "user.type != 'Bot'" in condition
-    for command in ("/remove", "/withdraw", "/recheck"):
+    for command in ("/remove", "/withdraw", "/restore", "/recheck"):
         assert f"startsWith(github.event.comment.body, '{command}')" in condition

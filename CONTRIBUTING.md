@@ -30,6 +30,7 @@ An account can add 10 new entries a day; more wait for the next daily run.
 
 Comment `/withdraw` on the issue you submitted it with. It stays in the catalog as withdrawn by the author and cannot be installed any more.
 Maintainers comment `/remove harmful <reason>` or `/remove not_useful <reason>`, or run the *moderate* workflow by hand.
+What a maintainer removed stays removed: `/withdraw` does not change it and an update does not bring it back. Only a maintainer can, with `/restore` in the issue of the entry.
 
 ## For tools that make issues (nexdeck)
 

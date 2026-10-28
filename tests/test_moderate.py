@@ -108,9 +108,43 @@ def test_karten13_a_harmful_entry_cannot_be_brought_back_by_an_update_but_a_with
     hub.submit(2, ALICE, form_body(VALUE.replace("version: 1.0.0", "version: 1.1.0"), changes="Again."))
     run(ctx, 2)
     assert hub.issues[2]["state"] == "open" and "removed by a maintainer" in hub.last_comment(2)
+    moderate.restore(ctx, ID)
     moderate.remove(ctx, ID, "withdrawn", "withdrawn by the author")
     run(ctx, 2, force=True)
     assert hub.issues[2]["state"] == "closed" and _entry(root)["removed"] is None
+
+
+def test_karten13_ac8_the_author_cannot_undo_a_removal_by_withdrawing_and_updating(ctx: Any, hub: FakeHub, root: Path) -> None:
+    _accepted(ctx, hub)
+    _go(ctx, _comment(1, MAINTAINER, "/remove harmful It sends your passwords away."))
+    _go(ctx, _comment(1, ALICE, "/withdraw"))
+    assert _entry(root)["removed"]["level"] == "harmful" and _entry(root)["removed"]["reason"] == "It sends your passwords away."
+    assert "only a maintainer can bring it back" in hub.last_comment(1)
+    moderate.remove(ctx, ID, "not_useful", "Still nothing.")
+    _go(ctx, _comment(1, ALICE, "/withdraw"))
+    assert _entry(root)["removed"]["level"] == "not_useful"
+    hub.submit(2, ALICE, form_body(VALUE.replace("version: 1.0.0", "version: 1.0.1"), changes="Nothing really."))
+    run(ctx, 2)
+    assert hub.issues[2]["state"] == "open" and _entry(root)["removed"]["level"] == "not_useful"
+
+
+def test_karten13_ac8_a_maintainer_brings_a_removed_entry_back_and_nobody_else(ctx: Any, hub: FakeHub, root: Path) -> None:
+    _accepted(ctx, hub)
+    _go(ctx, _comment(1, MAINTAINER, "/restore"))
+    assert "is not removed" in hub.last_comment(1)
+    _go(ctx, _comment(1, MAINTAINER, "/remove harmful Bad."))
+    for who in (ALICE, BOB, {"id": 5, "login": "maintainer"}):
+        _go(ctx, _comment(1, who, "/restore"))
+        assert _entry(root)["removed"]["level"] == "harmful" and "Only a maintainer can bring an entry back." in hub.last_comment(1)
+    _go(ctx, _comment(1, MAINTAINER, "/restore"))
+    assert _entry(root)["removed"] is None and "**Restored.**" in hub.last_comment(1)
+    assert read_json(root / "catalog.json")["entries"][0]["removed"] is None
+    assert "Queue size" in (root / "README.md").read_text(encoding="utf-8")
+    # A withdrawal by the author is a removal like any other, and a maintainer takes it back as well.
+    _go(ctx, _comment(1, ALICE, "/withdraw"))
+    assert _entry(root)["removed"]["level"] == "withdrawn"
+    _go(ctx, _comment(1, MAINTAINER, "/restore"))
+    assert _entry(root)["removed"] is None
 
 
 def test_karten13_ec4_when_the_account_is_gone_updates_go_through_the_maintainers(ctx: Any, hub: FakeHub, root: Path) -> None:
