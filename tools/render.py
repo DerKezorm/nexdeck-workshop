@@ -25,9 +25,9 @@ class RenderError(Exception):
 
 def stand_in(checked: dict[str, Any]) -> dict[str, Any]:
     """What an own connection is drawn as: a list card of what it can read. A card brings its own demo data."""
-    items = [{"title": label, "subtitle": path["path"], "value": None} for label, path in zip(checked.get("read_labels") or [], checked.get("reads") or [], strict=False)]
+    items = [{"title": label, "subtitle": path["path"], "value": ""} for label, path in zip(checked.get("read_labels") or [], checked.get("reads") or [], strict=False)]
     if not items:
-        items = [{"title": "Connection test", "subtitle": "", "value": None}]
+        items = [{"title": "Connection test", "subtitle": "", "value": ""}]
     return {
         "status": "ok",
         "primary": None,
