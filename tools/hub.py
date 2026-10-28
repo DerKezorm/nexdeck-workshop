@@ -88,10 +88,31 @@ class GitHub:
             raise RuntimeError(body["errors"][0].get("message", "GraphQL error"))
         return body["data"]  # type: ignore[no-any-return]
 
+    def _discussion_titled(self, title: str) -> dict[str, str] | None:
+        """A discussion that has this title already: a run that failed after making it must not make it twice."""
+        owner, name = self.repo.split("/", 1)
+        cursor = None
+        for _ in range(20):
+            page = self._graphql(
+                "query($owner:String!,$name:String!,$after:String){repository(owner:$owner,name:$name)"
+                "{discussions(first:100,after:$after){nodes{id url title} pageInfo{hasNextPage endCursor}}}}",
+                {"owner": owner, "name": name, "after": cursor},
+            )["repository"]["discussions"]
+            for one in page["nodes"]:
+                if one["title"] == title:
+                    return {"id": one["id"], "url": one["url"]}
+            if not page["pageInfo"]["hasNextPage"]:
+                break
+            cursor = page["pageInfo"]["endCursor"]
+        return None
+
     def create_discussion(self, title: str, body: str) -> dict[str, str] | None:
         """A discussion for the thumbs; ``None`` when this repository has no discussions to put it in."""
         owner, name = self.repo.split("/", 1)
         try:
+            found = self._discussion_titled(title)
+            if found:
+                return found
             data = self._graphql(
                 "query($owner:String!,$name:String!){repository(owner:$owner,name:$name){id discussionCategories(first:25){nodes{id name}}}}",
                 {"owner": owner, "name": name},

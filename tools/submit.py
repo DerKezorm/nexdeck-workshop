@@ -146,6 +146,10 @@ def process(ctx: Context, issue: dict[str, Any], *, force: bool = False, announc
     previous = entries.load_entry(ctx.root, target_id)
     if update_of and previous is None:
         reasons.append(f"There is no entry {update_of} to update.")
+    stored = entries.entry_dir(ctx.root, target_id) / "definition.yaml"
+    if previous is not None and number in previous.get("issues", []) and stored.is_file() and stored.read_text(encoding="utf-8") == form.definition:
+        # Taken in an earlier run whose comment never came out (the files were pushed, the post failed): say it again.
+        return _accepted(ctx, number, digest, target_id, previous, updated=len(previous["issues"]) > 1)
     if previous is not None:
         owner = int(previous["author_id"])
         if author_id != owner and author_id not in ctx.maintainers:
@@ -210,10 +214,14 @@ def process(ctx: Context, issue: dict[str, Any], *, force: bool = False, announc
             previous=previous,
             discussion=discussion,
         )
+    return _accepted(ctx, number, digest, target_id, data, updated=previous is not None)
+
+
+def _accepted(ctx: Context, number: int, digest: str, target_id: str, data: dict[str, Any], *, updated: bool) -> dict[str, Any]:
     link = f"https://github.com/{ctx.hub.repo}/tree/main/entries/{target_id}"
     meta = data["meta"]
     lines = [
-        f"**Accepted.** `{target_id}` is {'updated' if previous else 'in the workshop now'}.",
+        f"**Accepted.** `{target_id}` is {'updated' if updated else 'in the workshop now'}.",
         "",
         f"- Version: {meta['version'] or '-'}",
         f"- Reach: {meta['class']} (read: only reads; buttons: presses buttons; login: signs in)",

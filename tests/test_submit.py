@@ -333,3 +333,16 @@ def test_karten13_based_on_names_an_entry_that_exists(ctx: Any, hub: FakeHub, ro
     assert read_json(root / "entries/202/test-better/entry.json")["based_on"] == "101/test-queue-size"
     assert hub.issues[3]["state"] == "open" and "Based on must be the id of an entry" in hub.last_comment(3)
     assert entries.load_entry(root, "202/test-worse") is None
+
+
+def test_karten13_a_post_that_never_came_out_is_made_again_without_changing_the_entry(ctx: Any, hub: FakeHub, root: Path) -> None:
+    hub.submit(1, ALICE, form_body(VALUE))
+    run(ctx, 1)
+    before = (root / "entries/101/test-queue-size/entry.json").read_text(encoding="utf-8")
+    # The files were pushed, the comment and the closing were lost.
+    hub.issues[1]["state"] = "open"
+    hub.thread[1].clear()
+    run(ctx, 1)
+    assert hub.issues[1]["state"] == "closed" and "**Accepted.**" in hub.last_comment(1)
+    assert (root / "entries/101/test-queue-size/entry.json").read_text(encoding="utf-8") == before
+    assert len(hub.discussions) == 1

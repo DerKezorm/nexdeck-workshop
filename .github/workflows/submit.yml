@@ -33,7 +33,7 @@ jobs:
           ISSUE: ${{ github.event.issue.number }}
           GITHUB_TOKEN: ${{ github.token }}
       - name: Push
-        run: .github/scripts/push.sh "Update the workshop from issue $ISSUE"
+        run: bash .github/scripts/push.sh "Update the workshop from issue $ISSUE"
         env:
           ISSUE: ${{ github.event.issue.number }}
       - name: Comment and close

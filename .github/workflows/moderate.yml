@@ -55,7 +55,7 @@ jobs:
           LEVEL: ${{ inputs.level }}
           REASON: ${{ inputs.reason }}
       - name: Push
-        run: .github/scripts/push.sh "Update the workshop from a command"
+        run: bash .github/scripts/push.sh "Update the workshop from a command"
       - name: Comment and close
         run: python -m tools.publish
         env:
