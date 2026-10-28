@@ -60,12 +60,42 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
-  moderate:
+  # The record job is the only one of a manual run that must not be dropped; the job after it does the work
+  # (and so does any later run of any action, should this one be dropped).
+  order:
     needs: [record]
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: workshop-write
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install -r requirements.txt -r kit/requirements.txt -r requirements-render.txt
+      - run: python -m playwright install --with-deps chromium
+      - name: Carry out the orders and the commands
+        run: python -m tools.work
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Push
+        run: bash .github/scripts/push.sh "Update the workshop from a command"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Comment and close
+        run: python -m tools.publish
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+  comment:
     if: >-
-      !cancelled() && (github.event_name == 'workflow_dispatch' ||
-      (github.event.issue.pull_request == null && github.event.comment.user.type != 'Bot' &&
-       (startsWith(github.event.comment.body, '/remove') || startsWith(github.event.comment.body, '/withdraw') || startsWith(github.event.comment.body, '/restore') || startsWith(github.event.comment.body, '/recheck'))))
+      github.event_name == 'issue_comment' && github.event.issue.pull_request == null && github.event.comment.user.type != 'Bot' &&
+      (startsWith(github.event.comment.body, '/remove') || startsWith(github.event.comment.body, '/withdraw') || startsWith(github.event.comment.body, '/restore') || startsWith(github.event.comment.body, '/recheck'))
     runs-on: ubuntu-latest
     timeout-minutes: 20
     concurrency:

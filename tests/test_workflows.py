@@ -42,7 +42,8 @@ def test_karten13_b3_a_manual_removal_is_written_down_by_a_job_that_is_never_dro
     jobs = _load("moderate")["jobs"]
     group = jobs["record"]["concurrency"]["group"]
     assert "github.run_id" in group and group != "workshop-write" and jobs["record"]["concurrency"]["cancel-in-progress"] is False
-    assert jobs["moderate"]["needs"] == ["record"] and "!cancelled()" in jobs["moderate"]["if"]
+    assert jobs["order"]["needs"] == ["record"] and jobs["order"]["concurrency"]["group"] == "workshop-write"
+    assert "needs" not in jobs["comment"], "a comment does not wait for a job that a comment never starts"
     runs = " ".join(step.get("run", "") for step in jobs["record"]["steps"])
     assert "tools.orders" in runs and "push.sh" in runs
 
@@ -87,7 +88,7 @@ def test_karten13_the_guard_against_text_in_a_command_sees_what_it_is_for() -> N
 
 
 def test_karten13_the_commands_of_the_comments_are_only_taken_from_people() -> None:
-    condition = _load("moderate")["jobs"]["moderate"]["if"]
+    condition = _load("moderate")["jobs"]["comment"]["if"]
     assert "user.type != 'Bot'" in condition
     for command in ("/remove", "/withdraw", "/restore", "/recheck"):
         assert f"startsWith(github.event.comment.body, '{command}')" in condition
@@ -122,6 +123,6 @@ def test_karten13_b6_the_key_is_given_to_the_steps_that_use_it_and_to_no_other()
 
 def test_karten13_b6_every_step_that_pushes_has_the_key_because_the_checkout_keeps_none() -> None:
     pushing = [(name, step) for name in NAMES for job in _load(name)["jobs"].values() for step in job["steps"] if "push.sh" in step.get("run", "")]
-    assert len(pushing) == 4
+    assert len(pushing) == 5
     for name, step in pushing:
         assert step["env"]["GITHUB_TOKEN"] == "${{ github.token }}", name
