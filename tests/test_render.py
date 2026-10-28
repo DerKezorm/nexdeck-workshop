@@ -51,3 +51,23 @@ def test_karten13_ec6_a_card_that_breaks_the_page_is_an_error_not_a_picture(tmp_
 def test_karten13_ec6_without_the_page_of_the_kit_nothing_is_drawn(tmp_path: Path) -> None:
     with pytest.raises(render.RenderError, match="missing"):
         render.draw({"type": "card", "name": "x", "form": "value", "widget_data": {}}, tmp_path / "a.png", tmp_path / "b.png", kit=tmp_path)
+
+
+def test_karten13_b9_only_the_page_itself_may_be_asked_for_while_drawing() -> None:
+    origin = "http://127.0.0.1:5000"
+    assert render.is_local(origin, origin) and render.is_local(origin + "/workshop-preview.html", origin)
+    assert not render.is_local("http://127.0.0.1:50001/x", origin)
+    assert not render.is_local("http://127.0.0.1:5000.evil.example/x", origin)
+    assert not render.is_local("https://evil.example/", origin) and not render.is_local("http://127.0.0.1:5000@evil.example/", origin)
+
+
+@needs_browser
+def test_karten13_b9_a_card_that_makes_the_page_hang_is_refused_in_time(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    kit = tmp_path / "kit"
+    (kit / "page").mkdir(parents=True)
+    (kit / "page" / "workshop-preview.html").write_text(
+        "<!doctype html><title>x</title><script>window.nexdeckPreview = {show() { for (;;) {} }}</script>", encoding="utf-8"
+    )
+    monkeypatch.setattr(render, "SHOW_TIMEOUT_MS", 1_500)
+    with pytest.raises(render.RenderError):
+        render.draw({"type": "card", "name": "x", "form": "value", "widget_data": {"status": "ok"}}, tmp_path / "a.png", tmp_path / "b.png", kit=kit)

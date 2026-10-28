@@ -19,6 +19,15 @@ from typing import Any
 from .common import ROOT, plain
 
 
+#: How long the page may take to show one card; a card that makes it hang is refused, the run does not hang with it.
+SHOW_TIMEOUT_MS = 20_000
+
+
+def is_local(url: str, origin: str) -> bool:
+    """An address of the page itself: the origin, or something below it. ``http://127.0.0.1:50001`` is not ``…:5000``."""
+    return url == origin or url.startswith(origin + "/")
+
+
 class RenderError(Exception):
     """A picture that cannot be drawn: the submission is refused for it (KARTEN-13 EC-6)."""
 
@@ -75,14 +84,15 @@ def draw(checked: dict[str, Any], light: Path, dark: Path, kit: Path | None = No
             browser = playwright.chromium.launch(headless=True)
             try:
                 context = browser.new_context(device_scale_factor=2, viewport={"width": 900, "height": 700})
-                context.route("**/*", lambda route: route.continue_() if route.request.url.startswith(origin) else route.abort())
+                context.route("**/*", lambda route: route.continue_() if is_local(route.request.url, origin) else route.abort())
                 view = context.new_page()
                 problems: list[str] = []
                 view.on("pageerror", lambda error: problems.append(str(error)))
                 view.goto(f"{origin}/workshop-preview.html", wait_until="load", timeout=30_000)
                 view.wait_for_function("window.nexdeckPreview !== undefined", timeout=15_000)
                 for theme, target in (("light", light), ("dark", dark)):
-                    view.evaluate("spec => window.nexdeckPreview.show(spec)", spec_of(checked, theme))
+                    # ``wait_for_function`` has a time limit of its own; ``evaluate`` has none and would hang the run with a card that hangs.
+                    view.wait_for_function("spec => { window.nexdeckPreview.show(spec); return true; }", arg=spec_of(checked, theme), timeout=SHOW_TIMEOUT_MS)
                     target.parent.mkdir(parents=True, exist_ok=True)
                     try:
                         # A card whose data break the renderer takes the whole tree down: no stage, and an error of the page.
