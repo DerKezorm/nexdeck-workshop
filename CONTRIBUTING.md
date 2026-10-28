@@ -13,6 +13,7 @@
 - No key, token or password, in the definition, its demo data, the description or the list of changes.
 - The sizes are within the limits (a definition with demo data: 60,000 characters).
 - Texts in several languages have an English one; a card has demo data; the category is one of Media, Downloads, Network, Server, Smart home, Other.
+- The description is a few sentences of English: at least 3 words and 20 characters, with common words such as "the", "with" or "how". An update has a list of changes of at least 3 characters.
 - Your preview can be drawn.
 
 The check class of an entry is `read` (only reads), `buttons` (has buttons that change something) or `login` (a connection that signs in). nexdeck shows it before anyone installs.

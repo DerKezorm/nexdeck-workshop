@@ -23,7 +23,22 @@ from typing import Any
 
 from . import entries, issue_form, kitcheck
 from . import render as renderer
-from .common import CATEGORIES, ID, MAX_ENTRIES, MAX_NEW_PER_DAY, ROOT, iso, maintainers, md, now, plain, version_tuple
+from .common import (
+    CATEGORIES,
+    DESCRIPTION_SENTENCE,
+    ID,
+    MAX_ENTRIES,
+    MAX_NEW_PER_DAY,
+    MIN_CHANGES_CHARS,
+    ROOT,
+    describes,
+    iso,
+    maintainers,
+    md,
+    now,
+    plain,
+    version_tuple,
+)
 from .hub import GitHub, Hub
 
 BOT = "github-actions[bot]"
@@ -126,8 +141,8 @@ def process(ctx: Context, issue: dict[str, Any], *, force: bool = False, announc
         reasons.append("Tick the box that says the submission is under the MIT License.")
     if not form.definition.strip():
         reasons.append("The definition is empty.")
-    if not form.description.strip():
-        reasons.append("Add a description of a few sentences, in English.")
+    if not describes(form.description):
+        reasons.append(DESCRIPTION_SENTENCE)
     based_on = form.based_on.strip()
     if based_on and not (ID.match(based_on) and entries.load_entry(ctx.root, based_on)):
         reasons.append("Based on must be the id of an entry in this workshop, such as 123456/queue-size.")
@@ -167,7 +182,7 @@ def process(ctx: Context, issue: dict[str, Any], *, force: bool = False, announc
         removed = previous.get("removed")
         if removed and removed.get("level") != "withdrawn":
             reasons.append("This entry was removed by a maintainer. Ask a maintainer to bring it back.")
-        if not form.changes.strip():
+        if len(form.changes.strip()) < MIN_CHANGES_CHARS:
             reasons.append("An update needs a list of changes.")
         old_version = previous["meta"].get("version") or ""
         if checked.get("version") and old_version and version_tuple(checked["version"]) <= version_tuple(old_version):

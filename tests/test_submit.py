@@ -251,7 +251,7 @@ def test_karten13_ec7_a_submission_no_run_took_up_is_taken_by_the_next_one(ctx: 
 
 
 def test_karten13_ec8_a_description_with_html_and_pictures_is_plain_text_everywhere(ctx: Any, hub: FakeHub, root: Path) -> None:
-    nasty = 'Hello <script>alert(1)</script> <img src="https://evil.example.com/x.png"> ![pixel](https://evil.example.com/p.png) [click](javascript:alert(1))'
+    nasty = 'This is <script>alert(1)</script> <img src="https://evil.example.com/x.png"> ![pixel](https://evil.example.com/p.png) [click](javascript:alert(1))'
     hub.submit(1, ALICE, form_body(VALUE, description=nasty))
     run(ctx, 1)
     assert hub.issues[1]["state"] == "closed"
@@ -397,3 +397,32 @@ def test_karten13_b9_an_id_with_a_line_end_after_it_is_no_id() -> None:
     from tools.common import ID
 
     assert ID.match("101/queue-size") and not ID.match("101/queue-size\n") and not ID.match("101/queue-size\n../x")
+
+
+@pytest.mark.parametrize(
+    "words",
+    ["Testkarte", "Eine Karte fuer das Wohnzimmer hier", "Shows the queue", "Queue sizes displayed here now", "x" * 30],
+)
+def test_karten8n_n6_a_description_that_is_not_a_few_words_of_english_is_refused(ctx: Any, hub: FakeHub, root: Path, words: str) -> None:
+    hub.submit(4, ALICE, form_body(VALUE, description=words))
+    run(ctx, 4)
+    assert hub.issues[4]["state"] == "open" and _files(root) == []
+    assert "Add a description of a few sentences, in English." in hub.last_comment(4)
+
+
+@pytest.mark.parametrize("words", ["Shows how many items wait", "A tile for the queue of your server"])
+def test_karten8n_n6_a_description_of_a_few_english_words_is_taken(ctx: Any, hub: FakeHub, root: Path, words: str) -> None:
+    hub.submit(4, ALICE, form_body(VALUE, description=words))
+    run(ctx, 4)
+    assert hub.issues[4]["state"] == "closed"
+
+
+def test_karten8n_n6_the_list_of_changes_of_an_update_needs_three_characters(ctx: Any, hub: FakeHub, root: Path) -> None:
+    hub.submit(1, ALICE, form_body(VALUE))
+    run(ctx, 1)
+    hub.submit(2, ALICE, form_body(_update(VALUE, "1.1.0"), changes=" a "))
+    run(ctx, 2)
+    assert hub.issues[2]["state"] == "open" and "update needs a list of changes" in hub.last_comment(2)
+    hub.submit(3, ALICE, form_body(_update(VALUE, "1.1.0"), changes="Fix"))
+    run(ctx, 3)
+    assert hub.issues[3]["state"] == "closed"

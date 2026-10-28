@@ -33,6 +33,23 @@ WITHDRAWN_REASON = "withdrawn by the author"
 #: The discussion category the thumbs are counted in; the first one of these that exists is used.
 DISCUSSION_CATEGORIES = ("Cards", "Show and tell", "General")
 
+#: A description is at least this many words and characters, with one of the common English words (the check of nexdeck says the same).
+MIN_DESCRIPTION_WORDS = 3
+MIN_DESCRIPTION_CHARS = 20
+MIN_CHANGES_CHARS = 3
+COMMON_WORDS = frozenset("the a an of to and in on for your how many shows with from is are it this that".split())
+DESCRIPTION_SENTENCE = "Add a description of a few sentences, in English."
+
+
+def describes(text: str) -> bool:
+    """Whether a text can be taken for a description: a few words, long enough, and English at least in part."""
+    return (
+        len(text.split()) >= MIN_DESCRIPTION_WORDS
+        and len(text.strip()) >= MIN_DESCRIPTION_CHARS
+        and any(word.lower() in COMMON_WORDS for word in re.findall(r"[A-Za-z]+", text))
+    )
+
+
 ID = re.compile(r"^(\d{1,12})/([a-z0-9][a-z0-9_-]{0,59})\Z")
 CONTROL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 
