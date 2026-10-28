@@ -42,6 +42,16 @@ Shows the torrents of a download client with their progress. A test entry that s
 
 ![Preview, light](entries/188376159/test-downloads/preview-light.png#gh-light-mode-only)![Preview, dark](entries/188376159/test-downloads/preview-dark.png#gh-dark-mode-only)
 
+### Server
+
+#### [Pocket ID](entries/188376159/pocket-id)
+
+Card, version 1.0.0, reach: read, by [DerKezorm](https://github.com/DerKezorm), 0 thumbs up
+
+Testkarte
+
+![Preview, light](entries/188376159/pocket-id/preview-light.png#gh-light-mode-only)![Preview, dark](entries/188376159/pocket-id/preview-dark.png#gh-dark-mode-only)
+
 ### Other
 
 #### [Example box](entries/188376159/test-box) (test)
