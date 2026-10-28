@@ -21,6 +21,7 @@ class Server:
         self.categories = categories
         self.titles = titles or []
         self.made: list[dict[str, Any]] = []
+        self.listed = 0
 
     def __call__(self, request: httpx.Request) -> httpx.Response:
         query = json.loads(request.content)["query"]
@@ -29,6 +30,7 @@ class Server:
             nodes = [{"id": f"C_{index}", "name": name} for index, name in enumerate(self.categories)]
             return httpx.Response(200, json={"data": {"repository": {"id": "R_1", "discussionCategories": {"nodes": nodes}}}})
         if "discussions(first:100" in query:
+            self.listed += 1
             nodes = [{"id": f"D_old{index}", "url": f"https://x/{index}", "title": title} for index, title in enumerate(self.titles)]
             return httpx.Response(200, json={"data": {"repository": {"discussions": {"nodes": nodes, "pageInfo": {"hasNextPage": False, "endCursor": None}}}}})
         if "createDiscussion" in query:
@@ -53,10 +55,11 @@ def test_karten13_ac6_without_a_cards_category_the_next_best_one_is_taken() -> N
     assert server.made[0]["cat"] == "C_2"
 
 
-def test_karten13_ac6_a_discussion_with_the_title_is_not_made_twice() -> None:
+def test_karten13_ac6_a_discussion_is_never_found_by_its_title() -> None:
+    """Somebody else may have made a discussion with the title of an entry before the action did: it is not taken."""
     server = Server(["Cards"], titles=["Other (2/other)", "Queue (1/queue)"])
-    assert _hub(server).create_discussion("Queue (1/queue)", "Body") == {"id": "D_old1", "url": "https://x/1"}
-    assert server.made == []
+    assert _hub(server).create_discussion("Queue (1/queue)", "Body") == {"id": "D_new", "url": "https://x/new"}
+    assert len(server.made) == 1 and server.listed == 0
 
 
 def test_karten13_ac6_a_repository_without_discussions_gives_none() -> None:

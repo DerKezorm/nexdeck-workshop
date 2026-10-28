@@ -346,3 +346,15 @@ def test_karten13_a_post_that_never_came_out_is_made_again_without_changing_the_
     assert hub.issues[1]["state"] == "closed" and "**Accepted.**" in hub.last_comment(1)
     assert (root / "entries/101/test-queue-size/entry.json").read_text(encoding="utf-8") == before
     assert len(hub.discussions) == 1
+
+
+def test_karten13_ac6_an_entry_keeps_the_discussion_it_was_given_through_its_updates(ctx: Any, hub: FakeHub, root: Path) -> None:
+    hub.submit(1, ALICE, form_body(VALUE))
+    run(ctx, 1)
+    stored = read_json(root / "entries/101/test-queue-size/entry.json")["discussion"]
+    # Somebody else made a discussion with the very title the action uses: the entry keeps its own, by id.
+    hub.discussions.append({"id": "D_stranger", "url": "https://github.com/x/y/discussions/99", "title": hub.discussions[0]["title"]})
+    hub.submit(2, ALICE, form_body(VALUE.replace("version: 1.0.0", "version: 1.0.1"), changes="More."))
+    run(ctx, 2)
+    assert read_json(root / "entries/101/test-queue-size/entry.json")["discussion"] == stored
+    assert len(hub.discussions) == 2, "no third discussion"
