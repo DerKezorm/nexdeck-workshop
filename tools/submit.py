@@ -1,22 +1,21 @@
 """Checks the submissions that wait, and puts the good ones into the repository (KARTEN-13).
 
-    python -m tools.submit [--issue N] [--force]
+    python -m tools.work [--issue N] [--daily]
 
-One run looks at every open issue that is a submission and has not been judged in its present wording, oldest first
-(KARTEN-13 EC-9: one after the other, the last one wins), so a run that GitHub skipped or delayed costs nothing:
-the next one takes up what is left (EC-7). A good submission becomes files in ``entries/``; a bad one gets a
-comment with every reason, and stays open. Nothing is posted here: the comments to write and the issues to close are
-collected in ``.outbox.json`` and posted by ``publish.py`` once the files are pushed.
+One run (``work.py``) looks at the open issues that are submissions and changed since the last run, oldest first
+(KARTEN-13 EC-9: one after the other, the last one wins); the daily run looks at all of them. A run that GitHub skipped
+or delayed costs nothing: the next one takes up what is left (EC-7). A good submission becomes files in ``entries/``; a
+bad one gets a comment with every reason, and stays open. Nothing is posted here: the comments to write and the issues
+to close are collected in ``.outbox.json`` and posted by ``publish.py`` once the files are pushed.
 """
 
 from __future__ import annotations
 
-import argparse
 import hashlib
 import re
 import sys
 import tempfile
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -42,6 +41,8 @@ class Context:
     kit: Path | None = None
     draw: Draw | None = None
     staff: set[int] | None = None
+    #: The issues a run could not judge (an error); while there are some, the run does not move ``since`` on.
+    failed: list[int] = field(default_factory=list)
 
     def pictures(self, checked: dict[str, Any], light: Path, dark: Path) -> None:
         (self.draw or (lambda data, one, two: renderer.draw(data, one, two, self.kit)))(checked, light, dark)
@@ -233,34 +234,38 @@ def _accepted(ctx: Context, number: int, digest: str, target_id: str, data: dict
     return _post(number, "accepted", digest, "\n".join(lines), close=True)
 
 
-def sweep(ctx: Context, event_issue: int | None = None, force: bool = False) -> list[dict[str, Any]]:
-    """Judges every issue that waits, oldest first, and makes the catalog and the README list again."""
+def sweep(
+    ctx: Context,
+    event_issue: int | None = None,
+    force: bool = False,
+    *,
+    since: str | None = None,
+    forced: Iterable[int] = (),
+) -> list[dict[str, Any]]:
+    """Judges the open issues that wait, oldest first, and makes the catalog and the README list again.
+
+    ``since`` limits the run to the issues changed after that moment (and the issue that woke it, and ``forced``);
+    without it every open issue is looked at. ``forced`` issues are judged again even if their wording was judged.
+    """
+    redo = {int(number) for number in forced} | ({event_issue} if force and event_issue is not None else set())
+    found = {int(one["number"]): one for one in ctx.hub.open_issues(since)}
+    for number in sorted(({event_issue} if event_issue is not None else set()) | redo):
+        if number not in found:
+            try:
+                found[number] = ctx.hub.issue(number)
+            except Exception as failure:  # noqa: BLE001 - an issue that cannot be read now is read by the next run
+                print(f"issue {number}: {type(failure).__name__}: {failure}", file=sys.stderr)
+                ctx.failed.append(number)
     posts = []
-    for issue in sorted(ctx.hub.open_issues(), key=lambda one: int(one["number"])):
-        mine = event_issue is not None and int(issue["number"]) == event_issue
+    for number in sorted(found):
+        speaks = number == event_issue or number in redo
         try:
-            post = process(ctx, issue, force=force and mine, announce=mine)
+            post = process(ctx, found[number], force=number in redo, announce=speaks)
         except Exception as failure:  # noqa: BLE001 - one issue that breaks a run must not hold up the others
-            print(f"issue {issue['number']}: {type(failure).__name__}: {failure}", file=sys.stderr)
+            print(f"issue {number}: {type(failure).__name__}: {failure}", file=sys.stderr)
+            ctx.failed.append(number)
             continue
         if post:
             posts.append(post)
     entries.refresh(ctx.root, ctx.clock)
     return posts
-
-
-def main(argv: list[str] | None = None) -> int:
-    from .publish import save_outbox
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--issue", type=int, help="The issue that woke this run.")
-    parser.add_argument("--force", action="store_true", help="Check that issue again even if its wording was judged.")
-    arguments = parser.parse_args(argv)
-    posts = sweep(Context(ROOT, GitHub()), arguments.issue, arguments.force)
-    save_outbox(ROOT, posts)
-    print(f"{len(posts)} comment(s) to post")
-    return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())

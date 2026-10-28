@@ -28,7 +28,7 @@ jobs:
       - run: pip install -r requirements.txt -r kit/requirements.txt -r requirements-render.txt
       - run: python -m playwright install --with-deps chromium
       - name: Check the submissions
-        run: python -m tools.submit --issue "$ISSUE"
+        run: python -m tools.work --issue "$ISSUE"
         env:
           ISSUE: ${{ github.event.issue.number }}
           GITHUB_TOKEN: ${{ github.token }}

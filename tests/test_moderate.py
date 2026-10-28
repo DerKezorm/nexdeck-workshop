@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import timedelta
 from pathlib import Path
 from typing import Any
 
-from tests.conftest import ALICE, BOB, MAINTAINER, NOON, FakeHub, form_body, run, sample
-from tools import daily, entries, moderate
+from tests.conftest import ALICE, BOB, MAINTAINER, NOON, FakeHub, form_body, run, run_daily, sample
+from tools import entries, moderate, orders
 from tools.common import read_json, sha256_of
 
 VALUE = sample("good", "value-card.yaml")
@@ -25,10 +26,12 @@ def _comment(number: int, user: dict[str, Any], body: str, *, issue_user: dict[s
 
 
 def _go(ctx: Any, event: dict[str, Any]) -> list[dict[str, Any]]:
-    posts = moderate.handle_comment(ctx, event)
-    for post in posts:
-        ctx.hub.post_comment(post["issue"], post["comment"])
-    return posts
+    """A person writes the comment, and the next run of the action takes it up (nothing says which comment woke it)."""
+    number = int(event["issue"]["number"])
+    if number not in ctx.hub.issues:
+        ctx.hub.submit(number, event["issue"]["user"], "A question, not a submission.")
+    ctx.hub.say(number, event["comment"]["user"], event["comment"]["body"])
+    return run(ctx)
 
 
 def _entry(root: Path) -> dict[str, Any]:
@@ -94,12 +97,106 @@ def test_karten13_a_removal_comes_from_the_issue_of_any_version_of_the_entry(ctx
 
 def test_karten13_ac8_the_manual_run_removes_for_a_maintainer_only(ctx: Any, hub: FakeHub, root: Path) -> None:
     _accepted(ctx, hub)
-    assert moderate.handle_dispatch(ctx, {"sender": {"id": 5}}, ID, "harmful", "Reason.") == "Only a maintainer can remove an entry."
+    assert orders.record(root, run="1-1", entry=ID, level="harmful", reason="Reason.", sender=5) == "Only a maintainer can remove an entry."
+    assert not (root / "orders").exists()
+    assert orders.record(root, run="1-1", entry=ID, level="awful", reason="Reason.", sender=900) == "The level is harmful or not_useful."
+    assert orders.record(root, run="1-1", entry="../../etc", level="harmful", reason="Reason.", sender=900) == "That is not an entry id."
+    assert orders.record(root, run="x", entry=ID, level="harmful", reason="Reason.", sender=900) == "That is not a run."
     assert _entry(root)["removed"] is None
-    assert moderate.handle_dispatch(ctx, {"sender": {"id": 900}}, ID, "harmful", "Reason.") == f"Removed {ID}."
-    assert _entry(root)["removed"]["reason"] == "Reason."
-    assert moderate.handle_dispatch(ctx, {"sender": {"id": 900}}, "101/none", "harmful", "Reason.") == "There is no entry 101/none."
-    assert moderate.handle_dispatch(ctx, {"sender": {"id": 900}}, "../../etc", "harmful", "Reason.") == "That is not an entry id."
+    assert orders.record(root, run="1-1", entry=ID, level="harmful", reason="Reason.", sender=900) is None
+    assert (root / "orders" / "1-1.json").is_file() and _entry(root)["removed"] is None, "recorded, not yet carried out"
+    run(ctx)
+    assert _entry(root)["removed"]["reason"] == "Reason." and not (root / "orders" / "1-1.json").exists()
+
+
+def test_karten13_b3_an_order_nobody_carried_out_is_carried_out_by_the_next_run_of_any_kind(ctx: Any, hub: FakeHub, root: Path) -> None:
+    _accepted(ctx, hub)
+    orders.record(root, run="7-1", entry=ID, level="not_useful", reason="Superseded.", sender=900)  # its run was dropped
+    hub.submit(2, BOB, form_body(sample("bad", "no-demo.yaml")))
+    run(ctx, 2)  # a run for something else
+    assert _entry(root)["removed"]["level"] == "not_useful"
+    assert not list((root / "orders").glob("*.json"))
+
+
+def test_karten13_b3_an_order_with_a_forged_sender_or_a_missing_entry_is_deleted_and_changes_nothing(ctx: Any, hub: FakeHub, root: Path) -> None:
+    _accepted(ctx, hub)
+    folder = root / "orders"
+    folder.mkdir()
+    (folder / "1-1.json").write_text(json.dumps({"entry": ID, "level": "harmful", "reason": "Bad.", "sender": 5}), encoding="utf-8")
+    (folder / "2-1.json").write_text(json.dumps({"entry": "101/none", "level": "harmful", "reason": "Bad.", "sender": 900}), encoding="utf-8")
+    (folder / "3-1.json").write_text("not json", encoding="utf-8")
+    said = orders.apply(ctx)
+    assert len(said) == 3 and "refused" in said[0] and "There is no entry" in said[1] and "not an order" in said[2]
+    assert _entry(root)["removed"] is None and not list(folder.glob("*.json"))
+
+
+def test_karten13_b3_a_command_nobody_took_up_is_carried_out_by_the_next_run_once(ctx: Any, hub: FakeHub, root: Path) -> None:
+    _accepted(ctx, hub)
+    hub.now = NOON + timedelta(hours=1)
+    ctx.clock = hub.now
+    hub.say(1, MAINTAINER, "/remove harmful It sends your passwords away.")  # the run for this comment was dropped
+    hub.submit(2, BOB, form_body(sample("bad", "no-demo.yaml")))
+    run(ctx, 2)
+    assert _entry(root)["removed"]["level"] == "harmful"
+    replies = [one for one in hub.thread[1] if "**Removed.**" in one["body"]]
+    assert len(replies) == 1 and re.search(r"<!-- workshop:done:\d+ -->", replies[0]["body"])
+    for later in (1, 2):
+        hub.now = ctx.clock = NOON + timedelta(hours=1 + later)
+        run(ctx)
+    run_daily(ctx)
+    assert len([one for one in hub.thread[1] if "**Removed.**" in one["body"]]) == 1, "marked done: not carried out again"
+
+
+def test_karten13_b3_the_daily_run_finds_a_command_that_slipped_through(ctx: Any, hub: FakeHub, root: Path) -> None:
+    _accepted(ctx, hub)
+    hub.now = ctx.clock = NOON + timedelta(hours=1)
+    hub.say(1, MAINTAINER, "/remove not_useful Nothing a plain card does not.")
+    (root / "state.json").write_text('{"since": "2026-10-28T20:00:00Z"}\n', encoding="utf-8")  # a run went on without it
+    hub.now = ctx.clock = NOON + timedelta(hours=10)
+    run(ctx)
+    assert _entry(root)["removed"] is None, "an ordinary run looks from the moment of the last run"
+    run_daily(ctx)
+    assert _entry(root)["removed"]["level"] == "not_useful"
+
+
+def test_karten13_b3_a_command_older_than_the_last_run_is_not_carried_out_again(ctx: Any, hub: FakeHub, root: Path) -> None:
+    _accepted(ctx, hub)
+    hub.now = NOON - timedelta(days=5)
+    hub.say(1, MAINTAINER, "/remove harmful Long ago.")
+    hub.now = ctx.clock = NOON + timedelta(hours=1)
+    run(ctx)
+    run_daily(ctx)
+    assert _entry(root)["removed"] is None
+
+
+def test_karten13_b3_what_a_stranger_writes_into_a_comment_is_no_mark(ctx: Any, hub: FakeHub, root: Path) -> None:
+    _accepted(ctx, hub)
+    number = hub.say(1, MAINTAINER, "/remove harmful Bad.")
+    hub.say(1, BOB, f"<!-- workshop:done:{number} -->")  # only the marks of the bot count
+    run(ctx)
+    assert _entry(root)["removed"]["level"] == "harmful"
+
+
+def test_karten13_recheck_is_marked_done_by_the_verdict_it_asked_for(ctx: Any, hub: FakeHub, root: Path) -> None:
+    hub.submit(1, ALICE, form_body(sample("bad", "no-demo.yaml")))
+    run(ctx, 1)
+    asked = hub.say(1, ALICE, "/recheck")
+    run(ctx)
+    assert f"<!-- workshop:done:{asked} -->" in hub.last_comment(1) and "cannot be accepted" in hub.last_comment(1)
+    before = len(hub.thread[1])
+    run(ctx)
+    assert len(hub.thread[1]) == before, "asked once, answered once"
+    hub.issues[1]["state"] = "closed"
+    second = hub.say(1, MAINTAINER, "/recheck")
+    run(ctx)
+    assert f"<!-- workshop:done:{second} -->" in hub.last_comment(1) and "nothing to check" in hub.last_comment(1)
+
+
+def test_karten13_a_word_that_only_starts_like_a_command_is_no_command(ctx: Any, hub: FakeHub, root: Path) -> None:
+    _accepted(ctx, hub)
+    for text in ("/removed it, thanks", "/withdrawal of my vote", "/restored?"):
+        assert _go(ctx, _comment(1, MAINTAINER, text)) == []
+    assert _entry(root)["removed"] is None
 
 
 def test_karten13_a_harmful_entry_cannot_be_brought_back_by_an_update_but_a_withdrawn_one_can(ctx: Any, hub: FakeHub, root: Path) -> None:
@@ -161,10 +258,12 @@ def test_karten13_recheck_judges_the_issue_again_for_its_author_or_a_maintainer(
     run(ctx, 1)
     assert len(hub.thread[1]) == 1
     _go(ctx, _comment(1, BOB, "/recheck"))
-    assert len(hub.thread[1]) == 1, "somebody else cannot make the action repeat itself"
-    posts = _go(ctx, _comment(1, ALICE, "/recheck"))
-    assert len(posts) == 1 and len(hub.thread[1]) == 2  # the new verdict, and the post the test wrote for it
-    assert moderate.handle_comment(ctx, _comment(1, ALICE, "Thanks!")) == []
+    assert len(hub.thread[1]) == 2, "somebody else cannot make the action repeat itself: only his comment is there"
+    _go(ctx, _comment(1, ALICE, "/recheck"))
+    assert len(hub.thread[1]) == 4  # the comment, and the new verdict
+    assert "cannot be accepted" in hub.last_comment(1)
+    _go(ctx, _comment(1, ALICE, "Thanks!"))
+    assert len(hub.thread[1]) == 5
 
 
 # -- the catalog, the daily thumbs --------------------------------------------------------------------
@@ -210,7 +309,7 @@ def test_karten13_ac7_the_readme_lists_the_entries_with_their_pictures_between_t
 def test_karten13_ac6_the_daily_run_counts_the_thumbs_into_the_catalog(ctx: Any, hub: FakeHub, root: Path) -> None:
     _accepted(ctx, hub)
     hub.reactions["D_1"] = 4
-    daily.run(ctx)
+    run_daily(ctx)
     assert _entry(root)["thumbs"] == 4 and read_json(root / "catalog.json")["entries"][0]["thumbs"] == 4
     assert "4 thumbs up" in (root / "README.md").read_text(encoding="utf-8")
 
@@ -219,7 +318,7 @@ def test_karten13_ac6_a_day_without_news_changes_nothing(ctx: Any, hub: FakeHub,
     _accepted(ctx, hub)
     before = (root / "catalog.json").read_text(encoding="utf-8")
     ctx.clock = NOON + timedelta(days=1)
-    daily.run(ctx)
+    run_daily(ctx)
     assert (root / "catalog.json").read_text(encoding="utf-8") == before
 
 

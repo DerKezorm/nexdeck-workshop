@@ -1,30 +1,39 @@
-"""The commands of the comments, and the manual removal (KARTEN-13 AC-8, EC-5).
-
-    python -m tools.moderate            # from a comment (GITHUB_EVENT_PATH holds the event)
-    python -m tools.moderate --dispatch # from the manual run: ENTRY, LEVEL and REASON in the environment
+"""The commands of the comments, and the removal itself (KARTEN-13 AC-8, EC-5, EC-7).
 
 ``/remove harmful|not_useful <reason>``: a maintainer takes an entry out of the shop; it stays in the catalog, marked
-removed, with the reason. ``/withdraw``: the author takes his own entry back (not one a maintainer removed). ``/restore``: a maintainer brings a removed entry back. ``/recheck``: the submission in this issue
-is judged again. The id of the person is the one of the event, never a name written in a comment.
+removed, with the reason. ``/restore``: a maintainer brings a removed entry back. ``/withdraw``: the author takes his own
+entry back (not one a maintainer removed). ``/recheck``: the submission in this issue is judged again. The id of the
+person is the one of the comment, never a name written in a comment.
+
+A command is carried out when a run finds it without the mark of the bot, ``<!-- workshop:done:<comment id> -->``, in a
+comment of the same issue. The reply of the bot carries that mark. So it does not matter which run was started for a
+comment, or that a run was dropped: the next run finds the command still undone and carries it out.
 """
 
 from __future__ import annotations
 
-import json
-import os
 import re
-import sys
-from pathlib import Path
 from typing import Any
 
 from . import entries, submit
-from .common import ID, LEVELS, ROOT, WITHDRAWN_REASON, clean, iso
+from .common import ID, LEVELS, WITHDRAWN_REASON, clean, iso
 
 REMOVE = re.compile(r"^/remove[ \t]+(harmful|not[_ -]useful)[ \t]+(\S.*)$", re.DOTALL)
+COMMAND = re.compile(r"^/(remove|withdraw|restore|recheck)(?![A-Za-z0-9_])")
+DONE = re.compile(r"<!-- workshop:done:(\d+) -->")
 
 
-def _reply(number: int, text: str) -> dict[str, Any]:
-    return {"issue": number, "comment": text, "close": False}
+def done_mark(comment_id: int) -> str:
+    return f"<!-- workshop:done:{comment_id} -->"
+
+
+def command_of(comment: dict[str, Any]) -> str | None:
+    """The command a comment of a person begins with (``remove``, ``withdraw``, ``restore`` or ``recheck``)."""
+    user = comment.get("user") or {}
+    if user.get("type") == "Bot" or user.get("login") == submit.BOT:
+        return None
+    found = COMMAND.match(str(comment.get("body") or "").strip())
+    return found.group(1) if found else None
 
 
 def remove(ctx: submit.Context, entry_id: str, level: str, reason: str) -> str | None:
@@ -64,65 +73,91 @@ def restore(ctx: submit.Context, entry_id: str) -> str | None:
     return None
 
 
-def handle_comment(ctx: submit.Context, event: dict[str, Any]) -> list[dict[str, Any]]:
-    body = str((event.get("comment") or {}).get("body") or "").strip()
-    number = int(event["issue"]["number"])
-    sender = int(event["comment"]["user"]["id"])
-    first = body.split("\n", 1)[0].strip()
-    if first.startswith("/recheck"):
-        issue = event["issue"]
+def answer(ctx: submit.Context, issue: dict[str, Any], comment: dict[str, Any]) -> tuple[str | None, bool]:
+    """What the bot says to a command: ``(reply, recheck)``. A recheck has no reply of its own: the new verdict is it."""
+    body = str(comment.get("body") or "").strip()
+    command = command_of(comment)
+    number = int(issue["number"])
+    sender = int((comment.get("user") or {}).get("id") or 0)
+    if command == "recheck":
         allowed = sender == int((issue.get("user") or {}).get("id") or 0) or sender in ctx.maintainers
-        return submit.sweep(ctx, number, force=allowed)
+        return None, allowed
     entry = entries.entry_for_issue(ctx.root, number)
-    if first.startswith("/remove"):
+    if command == "remove":
         if sender not in ctx.maintainers:
-            return [_reply(number, "Only a maintainer can remove an entry.")]
+            return "Only a maintainer can remove an entry.", False
         found = REMOVE.match(body)
         if not found:
-            return [_reply(number, "Write `/remove harmful <reason>` or `/remove not_useful <reason>`.")]
+            return "Write `/remove harmful <reason>` or `/remove not_useful <reason>`.", False
         if entry is None:
-            return [_reply(number, "This issue belongs to no entry.")]
-        failure = remove(ctx, entry["id"], found.group(1).replace("-", "_").replace(" ", "_"), found.group(2))
-        return [_reply(number, failure or f"**Removed.** `{entry['id']}` stays in the catalog, marked as removed, and cannot be installed any more.")]
-    if first.startswith("/withdraw"):
+            return "This issue belongs to no entry.", False
+        level = found.group(1).replace("-", "_").replace(" ", "_")
+        failure = remove(ctx, entry["id"], level, found.group(2))
+        return failure or f"**Removed.** `{entry['id']}` stays in the catalog, marked as removed, and cannot be installed any more.", False
+    if command == "withdraw":
         if entry is None:
-            return [_reply(number, "This issue belongs to no entry.")]
+            return "This issue belongs to no entry.", False
         if sender != int(entry["author_id"]):
-            return [_reply(number, "Only the author of an entry can withdraw it.")]
+            return "Only the author of an entry can withdraw it.", False
         failure = remove(ctx, entry["id"], "withdrawn", WITHDRAWN_REASON)
-        return [_reply(number, failure or f"**Withdrawn.** `{entry['id']}` stays in the catalog, marked as withdrawn by the author.")]
-    if first.startswith("/restore"):
+        return failure or f"**Withdrawn.** `{entry['id']}` stays in the catalog, marked as withdrawn by the author.", False
+    if command == "restore":
         if sender not in ctx.maintainers:
-            return [_reply(number, "Only a maintainer can bring an entry back.")]
+            return "Only a maintainer can bring an entry back.", False
         if entry is None:
-            return [_reply(number, "This issue belongs to no entry.")]
+            return "This issue belongs to no entry.", False
         failure = restore(ctx, entry["id"])
-        return [_reply(number, failure or f"**Restored.** `{entry['id']}` can be installed again.")]
-    return []
+        return failure or f"**Restored.** `{entry['id']}` can be installed again.", False
+    return None, False
 
 
-def handle_dispatch(ctx: submit.Context, event: dict[str, Any], entry_id: str, level: str, reason: str) -> str:
-    sender = int((event.get("sender") or {}).get("id") or 0)
-    if sender not in ctx.maintainers:
-        return "Only a maintainer can remove an entry."
-    return remove(ctx, entry_id, level, reason) or f"Removed {entry_id}."
+def _number_of(comment: dict[str, Any]) -> int:
+    return int(str(comment["issue_url"]).rstrip("/").rsplit("/", 1)[1])
 
 
-def main(argv: list[str] | None = None) -> int:
-    from .hub import GitHub
-    from .publish import save_outbox
+def catch_up(ctx: submit.Context, since: str) -> tuple[list[dict[str, Any]], dict[int, list[int]]]:
+    """Carries out the commands written since the moment given that the bot has not marked done, oldest first.
 
-    event = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text(encoding="utf-8"))
-    ctx = submit.Context(ROOT, GitHub())
-    if "--dispatch" in (argv if argv is not None else sys.argv[1:]):
-        message = handle_dispatch(ctx, event, os.environ["ENTRY"], os.environ["LEVEL"], os.environ["REASON"])
-        print(message)
-        return 0 if message.startswith("Removed") else 1
-    posts = handle_comment(ctx, event)
-    save_outbox(ROOT, posts)
-    print(f"{len(posts)} comment(s) to post")
-    return 0
+    Returns the replies to post and, for ``/recheck``, ``{issue: [comment ids]}``: the run judges those issues again and
+    puts the mark on the verdict.
+    """
+    asked = [one for one in ctx.hub.comments_since(since) if command_of(one)]
+    posts: list[dict[str, Any]] = []
+    rechecks: dict[int, list[int]] = {}
+    for number in sorted({_number_of(one) for one in asked}):
+        try:
+            issue = ctx.hub.issue(number)
+            if "pull_request" in issue:
+                continue
+            thread = ctx.hub.comments(number)
+            marked = {
+                int(found)
+                for one in thread
+                if (one.get("user") or {}).get("login") == submit.BOT
+                for found in DONE.findall(str(one.get("body") or ""))
+            }
+            candidates = {int(one["id"]) for one in asked if _number_of(one) == number}
+            for comment in sorted(thread, key=lambda one: int(one["id"])):
+                comment_id = int(comment["id"])
+                if comment_id not in candidates or comment_id in marked:
+                    continue
+                reply, recheck = answer(ctx, issue, comment)
+                if recheck:
+                    rechecks.setdefault(number, []).append(comment_id)
+                elif reply:
+                    posts.append({"issue": number, "comment": f"{reply}\n\n{done_mark(comment_id)}", "close": False})
+        except Exception as failure:  # noqa: BLE001 - one issue that breaks a run must not hold up the others
+            print(f"issue {number}: {type(failure).__name__}: {failure}")
+            ctx.failed.append(number)
+    return posts, rechecks
 
 
-if __name__ == "__main__":
-    sys.exit(main())
+def mark_rechecks(posts: list[dict[str, Any]], rechecks: dict[int, list[int]]) -> None:
+    """Puts the mark of the commands on the verdicts they asked for; a command that got no verdict gets a reply."""
+    for number, ids in rechecks.items():
+        marks = "\n".join(done_mark(one) for one in ids)
+        verdict = next((post for post in posts if post["issue"] == number), None)
+        if verdict:
+            verdict["comment"] += f"\n{marks}"
+        else:
+            posts.append({"issue": number, "comment": f"There is nothing to check in this issue: it is not an open submission.\n\n{marks}", "close": False})

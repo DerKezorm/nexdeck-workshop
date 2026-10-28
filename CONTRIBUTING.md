@@ -46,5 +46,19 @@ pip install -r requirements-dev.txt
 python -m pytest
 ```
 
-The actions run `tools/submit.py` (on every issue), `tools/daily.py` (once a day), `tools/moderate.py` (comments and manual removal) and `tools/publish.py`
-(posts the comments after the files are pushed). `kit/` is made by `backend/tools/workshop_kit.py` in nexdeck and replaced as a whole.
+Every action runs `tools/work.py` (`python -m tools.work`), which works from the state of the repository and not from the event that woke it.
+The actions are `submit` (an issue opened or edited), `moderate` (a comment) and `daily` (once a day, with `--daily`); `tools/publish.py` posts the comments after the files are pushed.
+`kit/` is made by `backend/tools/workshop_kit.py` in nexdeck and replaced as a whole.
+
+### Why a run works from the state
+
+GitHub keeps one waiting run per concurrency group and drops the others when a newer one arrives. So a run cannot be trusted to be the one that
+was started for a given event. Instead every run takes up everything that is still open: the submissions that changed since the last run
+(`state.json` holds the moment; it only moves on when the run judged every issue it looked at), and the daily run takes up all of them.
+A dropped run therefore costs nothing: what it was for is found by the next one. The comments of an issue are only read for the issues that
+changed, and lists are read page by page up to their end.
+
+Commands in comments (`/remove`, `/restore`, `/withdraw`, `/recheck`) work the same way: a run carries out every command it finds that
+the bot has not marked done (the reply of the bot carries `<!-- workshop:done:<comment id> -->`), so it does not matter which run was started for a comment.
+A removal started by hand (the *moderate* workflow) is first written to `orders/` by a job that is never dropped; every run carries out the
+orders that lie there before it does anything else.

@@ -10,7 +10,7 @@ from typing import Any
 
 import pytest
 
-from tests.conftest import ALICE, BOB, MAINTAINER, NOON, SUBMISSIONS, FakeHub, form_body, run, sample
+from tests.conftest import ALICE, BOB, MAINTAINER, NOON, SUBMISSIONS, FakeHub, form_body, run, run_daily, sample
 from tools import entries, render
 from tools.common import read_json
 
@@ -81,7 +81,7 @@ def test_karten13_ac4_a_corrected_submission_in_the_same_issue_is_checked_again(
     hub.submit(3, ALICE, form_body(sample("bad", "no-demo.yaml")))
     run(ctx, 3)
     assert hub.issues[3]["state"] == "open"
-    hub.issues[3]["body"] = form_body(sample("good", "value-card.yaml"))
+    hub.edit(3, form_body(sample("good", "value-card.yaml")))
     run(ctx, 3)
     assert hub.issues[3]["state"] == "closed" and "**Accepted.**" in hub.last_comment(3)
     assert len(_files(root)) == 6
@@ -279,15 +279,13 @@ def test_karten13_a_card_is_drawn_from_its_demo_data_in_its_own_size() -> None:
 
 
 def test_karten13_without_discussions_a_submission_is_still_taken_and_the_daily_run_makes_the_discussion(ctx: Any, hub: FakeHub, root: Path) -> None:
-    from tools import daily
-
     hub.discussions_on = False
     hub.submit(1, ALICE, form_body(VALUE))
     run(ctx, 1)
     assert hub.issues[1]["state"] == "closed" and "Discussion:" not in hub.last_comment(1)
     assert read_json(root / "entries/101/test-queue-size/entry.json")["discussion"] is None
     hub.discussions_on = True
-    daily.run(ctx)
+    run_daily(ctx)
     assert read_json(root / "entries/101/test-queue-size/entry.json")["discussion"]["id"] == "D_1"
     assert read_json(root / "catalog.json")["entries"][0]["discussion"].endswith("/discussions/1")
 
@@ -358,3 +356,4 @@ def test_karten13_ac6_an_entry_keeps_the_discussion_it_was_given_through_its_upd
     run(ctx, 2)
     assert read_json(root / "entries/101/test-queue-size/entry.json")["discussion"] == stored
     assert len(hub.discussions) == 2, "no third discussion"
+

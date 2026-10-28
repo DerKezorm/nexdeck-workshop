@@ -24,10 +24,26 @@ def test_karten13_workflows_are_plain_yaml_with_a_job(name: str) -> None:
     assert flow["name"] == name and flow["jobs"]
 
 
+def _writer(name: str) -> dict[str, Any]:
+    """The concurrency of the job that writes: the whole workflow's, or the job's own."""
+    flow = _load(name)
+    jobs = [job for job in flow["jobs"].values() if job.get("concurrency", {}).get("group") == "workshop-write"]
+    return flow["concurrency"] if "concurrency" in flow else jobs[0]["concurrency"]  # type: ignore[no-any-return]
+
+
 def test_karten13_ec9_the_actions_that_write_go_one_after_the_other_and_none_is_cancelled() -> None:
     for name in ("submit", "daily", "moderate"):
-        flow = _load(name)
-        assert flow["concurrency"] == {"group": "workshop-write", "cancel-in-progress": False}, name
+        assert _writer(name) == {"group": "workshop-write", "cancel-in-progress": False}, name
+
+
+def test_karten13_b3_a_manual_removal_is_written_down_by_a_job_that_is_never_dropped() -> None:
+    """Inputs are no state: the job that records them has a group of its own per run, and the writer waits for it."""
+    jobs = _load("moderate")["jobs"]
+    group = jobs["record"]["concurrency"]["group"]
+    assert "github.run_id" in group and group != "workshop-write" and jobs["record"]["concurrency"]["cancel-in-progress"] is False
+    assert jobs["moderate"]["needs"] == ["record"] and "!cancelled()" in jobs["moderate"]["if"]
+    runs = " ".join(step.get("run", "") for step in jobs["record"]["steps"])
+    assert "tools.orders" in runs and "push.sh" in runs
 
 
 def test_karten13_the_triggers() -> None:
@@ -57,3 +73,10 @@ def test_karten13_the_commands_of_the_comments_are_only_taken_from_people() -> N
     assert "user.type != 'Bot'" in condition
     for command in ("/remove", "/withdraw", "/restore", "/recheck"):
         assert f"startsWith(github.event.comment.body, '{command}')" in condition
+
+
+def test_karten13_b3_every_write_action_runs_the_same_work_from_the_state() -> None:
+    """Submissions and the daily run take up everything that is open (the run that woke them may have been dropped)."""
+    for name, command in (("submit", "python -m tools.work --issue"), ("daily", "python -m tools.work --daily")):
+        steps = [step.get("run", "") for step in _load(name)["jobs"][name]["steps"]]
+        assert any(step.startswith(command) for step in steps), name

@@ -28,7 +28,7 @@ jobs:
       - run: pip install -r requirements.txt -r kit/requirements.txt -r requirements-render.txt
       - run: python -m playwright install --with-deps chromium
       - name: Thumbs up and waiting submissions
-        run: python -m tools.daily
+        run: python -m tools.work --daily
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - name: Push

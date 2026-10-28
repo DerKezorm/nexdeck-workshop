@@ -1,10 +1,10 @@
-"""The daily run: counts the thumbs up, gives an entry without a discussion one, and takes up what waits.
+"""The thumbs up of the daily run, and the discussion of an entry that has none.
 
-    python -m tools.daily
+    python -m tools.daily      # the same as python -m tools.work --daily
 
 The thumbs are counted once a day and written into the catalog; nexdeck never asks GitHub for them (KARTEN-13 AC-6).
-Submissions that waited for the next day (EC-3) or that no run took up (EC-7) are judged by the same sweep every
-submission goes through.
+The rest of the daily run (the submissions that waited for the next day, EC-3, or that no run took up, EC-7) is
+``work.py``.
 """
 
 from __future__ import annotations
@@ -12,8 +12,7 @@ from __future__ import annotations
 import sys
 
 from . import entries, submit
-from .common import ROOT, plain
-from .hub import GitHub
+from .common import plain
 
 
 def count_thumbs(ctx: submit.Context) -> int:
@@ -39,18 +38,10 @@ def count_thumbs(ctx: submit.Context) -> int:
     return changed
 
 
-def run(ctx: submit.Context) -> list[dict]:  # type: ignore[type-arg]
-    count_thumbs(ctx)
-    return submit.sweep(ctx)
-
-
 def main() -> int:
-    from .publish import save_outbox
+    from . import work
 
-    posts = run(submit.Context(ROOT, GitHub()))
-    save_outbox(ROOT, posts)
-    print(f"{len(posts)} comment(s) to post")
-    return 0
+    return work.main(["--daily"])
 
 
 if __name__ == "__main__":

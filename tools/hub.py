@@ -14,12 +14,17 @@ import httpx
 from .common import DISCUSSION_CATEGORIES
 
 API = "https://api.github.com"
+PAGE = 100
+#: A list longer than this many pages is not read to its end: the run fails and the next one tries again.
+MAX_PAGES = 200
 
 
 class Hub(Protocol):
     repo: str
 
-    def open_issues(self) -> list[dict[str, Any]]: ...
+    def open_issues(self, since: str | None = None) -> list[dict[str, Any]]: ...
+
+    def comments_since(self, since: str) -> list[dict[str, Any]]: ...
 
     def issue(self, number: int) -> dict[str, Any]: ...
 
@@ -50,21 +55,28 @@ class GitHub:
         )
 
     def _pages(self, path: str, params: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+        """Every page of a list, one after the other; a page with fewer than :data:`PAGE` rows is the last."""
         found: list[dict[str, Any]] = []
-        page = 1
-        while True:
-            answer = self.http.get(path, params={**(params or {}), "per_page": 100, "page": page})
+        for page in range(1, MAX_PAGES + 1):
+            answer = self.http.get(path, params={**(params or {}), "per_page": PAGE, "page": page})
             answer.raise_for_status()
             batch = answer.json()
             found += batch
-            if len(batch) < 100:
+            if len(batch) < PAGE:
                 return found
-            page += 1
+        raise RuntimeError(f"{path} has more than {MAX_PAGES} pages.")
 
-    def open_issues(self) -> list[dict[str, Any]]:
-        """Open issues, oldest first; pull requests are not issues here."""
-        rows = self._pages(f"/repos/{self.repo}/issues", {"state": "open", "sort": "created", "direction": "asc"})
+    def open_issues(self, since: str | None = None) -> list[dict[str, Any]]:
+        """Open issues, oldest first, those changed since the moment given (all when none is); pull requests are not issues here."""
+        params: dict[str, Any] = {"state": "open", "sort": "created", "direction": "asc"}
+        if since:
+            params["since"] = since
+        rows = self._pages(f"/repos/{self.repo}/issues", params)
         return [row for row in rows if "pull_request" not in row]
+
+    def comments_since(self, since: str) -> list[dict[str, Any]]:
+        """The comments of every issue and pull request of the repository that were written or changed since the moment given."""
+        return self._pages(f"/repos/{self.repo}/issues/comments", {"since": since, "sort": "updated", "direction": "asc"})
 
     def issue(self, number: int) -> dict[str, Any]:
         answer = self.http.get(f"/repos/{self.repo}/issues/{number}")
