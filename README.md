@@ -42,14 +42,6 @@ A made-up connection that signs in with a user name and a password. A test entry
 
 ![Preview, light](entries/188376159/test-box/preview-light.png#gh-light-mode-only)![Preview, dark](entries/188376159/test-box/preview-dark.png#gh-dark-mode-only)
 
-#### [Removed on purpose](entries/188376159/test-removed) (test)
-
-Card, version 1.0.0, reach: read, by [DerKezorm](https://github.com/DerKezorm), 0 thumbs up
-
-An entry made to be taken out again; it stays in the catalog as removed test data.
-
-![Preview, light](entries/188376159/test-removed/preview-light.png#gh-light-mode-only)![Preview, dark](entries/188376159/test-removed/preview-dark.png#gh-dark-mode-only)
-
 
 <!-- entries:end -->
 
