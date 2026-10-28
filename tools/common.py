@@ -33,7 +33,7 @@ WITHDRAWN_REASON = "withdrawn by the author"
 #: The discussion category the thumbs are counted in; the first one of these that exists is used.
 DISCUSSION_CATEGORIES = ("Cards", "Show and tell", "General")
 
-ID = re.compile(r"^(\d{1,12})/([a-z0-9][a-z0-9_-]{0,59})$")
+ID = re.compile(r"^(\d{1,12})/([a-z0-9][a-z0-9_-]{0,59})\Z")
 CONTROL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 
 

@@ -392,3 +392,8 @@ def test_karten13_b7_a_description_has_no_automatic_link_mention_or_reference_in
         assert not re.search(r"(?i)\bwww\.\w", page) and not re.search(r"@\w", page) and not re.search(r"#\d", page) and not re.search(r"(?i)GH-\d", page)
     assert "![x](" not in pages[0] and "<b>" not in pages[0]
 
+
+def test_karten13_b9_an_id_with_a_line_end_after_it_is_no_id() -> None:
+    from tools.common import ID
+
+    assert ID.match("101/queue-size") and not ID.match("101/queue-size\n") and not ID.match("101/queue-size\n../x")
