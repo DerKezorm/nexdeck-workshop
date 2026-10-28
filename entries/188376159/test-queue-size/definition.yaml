@@ -1,0 +1,11 @@
+nexdeck-card: 1
+slug: test-queue-size
+name: {en: Queue size, de: Warteschlange}
+version: 1.0.0
+description: How many items wait in the queue.
+requires: [jsonapi]
+requests: [{id: q, path: /api/queue}]
+form: value
+value: {path: count, label: Queue, format: number}
+demo:
+  q: {count: 7}

@@ -1,6 +1,6 @@
 {
   "format": 1,
-  "generated_at": "2026-10-28T11:28:25Z",
+  "generated_at": "2026-10-28T15:42:40Z",
   "entries": [
     {
       "id": "188376159/test-box",
@@ -81,6 +81,47 @@
       "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/5",
       "based_on": null,
       "updated_at": "2026-10-28T11:25:34Z",
+      "removed": null
+    },
+    {
+      "id": "188376159/test-queue-size",
+      "type": "card",
+      "slug": "test-queue-size",
+      "name": {
+        "en": "Queue size",
+        "de": "Warteschlange"
+      },
+      "description": "A test entry for the run of the correction: shows how many items wait.",
+      "author": {
+        "id": 188376159,
+        "login": "DerKezorm"
+      },
+      "version": "1.0.0",
+      "min_nexdeck": "0.51.0",
+      "category": "media",
+      "requires": [
+        "jsonapi"
+      ],
+      "class": "read",
+      "reads": [
+        {
+          "kind": "jsonapi",
+          "path": "/api/queue"
+        }
+      ],
+      "buttons": [],
+      "sha256": "4b978cffb8cf6f62964a686504932fa9ce5be30e70c74d27a4ddd98c3ffefc7d",
+      "files": {
+        "definition": "entries/188376159/test-queue-size/definition.yaml",
+        "readme": "entries/188376159/test-queue-size/README.md",
+        "changelog": "entries/188376159/test-queue-size/CHANGELOG.md",
+        "light": "entries/188376159/test-queue-size/preview-light.png",
+        "dark": "entries/188376159/test-queue-size/preview-dark.png"
+      },
+      "thumbs": 0,
+      "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/15",
+      "based_on": null,
+      "updated_at": "2026-10-28T15:42:40Z",
       "removed": null
     },
     {
