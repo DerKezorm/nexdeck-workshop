@@ -22,7 +22,26 @@ Every submission is published under the [MIT License](LICENSE).
 
 <!-- entries:start -->
 
-Nothing here yet.
+### Downloads
+
+#### [Downloads](entries/188376159/test-downloads) (test)
+
+Card, version 1.0.0, reach: read, by [DerKezorm](https://github.com/DerKezorm), 0 thumbs up
+
+Shows the torrents of a download client with their progress. A test entry that stays as test data.
+
+![Preview, light](entries/188376159/test-downloads/preview-light.png#gh-light-mode-only)![Preview, dark](entries/188376159/test-downloads/preview-dark.png#gh-dark-mode-only)
+
+### Other
+
+#### [Example box](entries/188376159/test-box) (test)
+
+Connection, version -, reach: login, by [DerKezorm](https://github.com/DerKezorm), 0 thumbs up
+
+A made-up connection that signs in with a user name and a password. A test entry that stays as test data.
+
+![Preview, light](entries/188376159/test-box/preview-light.png#gh-light-mode-only)![Preview, dark](entries/188376159/test-box/preview-dark.png#gh-dark-mode-only)
+
 
 <!-- entries:end -->
 
