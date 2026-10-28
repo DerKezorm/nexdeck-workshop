@@ -4,12 +4,13 @@
   "author_login": "DerKezorm",
   "category": "server",
   "based_on": null,
-  "issue": 16,
+  "issue": 18,
   "issues": [
-    16
+    16,
+    18
   ],
   "created_at": "2026-10-28T20:22:29Z",
-  "updated_at": "2026-10-28T20:22:29Z",
+  "updated_at": "2026-10-28T20:40:38Z",
   "removed": null,
   "thumbs": 0,
   "discussion": {
@@ -20,11 +21,11 @@
   "meta": {
     "slug": "pocket-id",
     "name": {
-      "en": "Pocket ID",
-      "de": "ANzhahl Admins"
+      "en": "Admin count",
+      "de": "Anzahl Admins"
     },
-    "description": "Testkarte",
-    "version": "1.0.0",
+    "description": "Shows how many administrators your Pocket ID has.",
+    "version": "1.0.1",
     "min_nexdeck": "0.51.0",
     "requires": [
       "pocketid"

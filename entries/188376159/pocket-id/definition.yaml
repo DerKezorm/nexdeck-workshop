@@ -1,9 +1,9 @@
 nexdeck-card: 1
 slug: pocket-id
 name:
-  en: Pocket ID
-  de: "ANzhahl Admins"
-version: "1.0.0"
+  en: Admin count
+  de: Anzahl Admins
+version: "1.0.1"
 requires:
   - pocketid
 requests:

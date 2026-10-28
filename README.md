@@ -44,11 +44,11 @@ Shows the torrents of a download client with their progress. A test entry that s
 
 ### Server
 
-#### [Pocket ID](entries/188376159/pocket-id)
+#### [Admin count](entries/188376159/pocket-id)
 
-Card, version 1.0.0, reach: read, by [DerKezorm](https://github.com/DerKezorm), 0 thumbs up
+Card, version 1.0.1, reach: read, by [DerKezorm](https://github.com/DerKezorm), 0 thumbs up
 
-Testkarte
+Shows how many administrators your Pocket ID has.
 
 ![Preview, light](entries/188376159/pocket-id/preview-light.png#gh-light-mode-only)![Preview, dark](entries/188376159/pocket-id/preview-dark.png#gh-dark-mode-only)
 

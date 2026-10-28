@@ -1,21 +1,21 @@
 {
   "format": 1,
-  "generated_at": "2026-10-28T20:22:29Z",
+  "generated_at": "2026-10-28T20:40:38Z",
   "entries": [
     {
       "id": "188376159/pocket-id",
       "type": "card",
       "slug": "pocket-id",
       "name": {
-        "en": "Pocket ID",
-        "de": "ANzhahl Admins"
+        "en": "Admin count",
+        "de": "Anzahl Admins"
       },
-      "description": "Testkarte",
+      "description": "Shows how many administrators your Pocket ID has.",
       "author": {
         "id": 188376159,
         "login": "DerKezorm"
       },
-      "version": "1.0.0",
+      "version": "1.0.1",
       "min_nexdeck": "0.51.0",
       "category": "server",
       "requires": [
@@ -29,7 +29,7 @@
         }
       ],
       "buttons": [],
-      "sha256": "5b3e32240f91b02641754e86d9432ad42e12cb2372fcfd573002231e2d43008b",
+      "sha256": "e7b9d478557d7b8d4e2b8a2f1d7eea043a6830e8d941477edc3ec4b3ed27b411",
       "files": {
         "definition": "entries/188376159/pocket-id/definition.yaml",
         "readme": "entries/188376159/pocket-id/README.md",
@@ -40,7 +40,7 @@
       "thumbs": 0,
       "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/17",
       "based_on": null,
-      "updated_at": "2026-10-28T20:22:29Z",
+      "updated_at": "2026-10-28T20:40:38Z",
       "removed": null
     },
     {
