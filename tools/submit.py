@@ -23,7 +23,7 @@ from typing import Any
 
 from . import entries, issue_form, kitcheck
 from . import render as renderer
-from .common import CATEGORIES, ID, MAX_ENTRIES, MAX_NEW_PER_DAY, ROOT, iso, maintainers, now, plain, version_tuple
+from .common import CATEGORIES, ID, MAX_ENTRIES, MAX_NEW_PER_DAY, ROOT, iso, maintainers, md, now, plain, version_tuple
 from .hub import GitHub, Hub
 
 BOT = "github-actions[bot]"
@@ -73,7 +73,8 @@ def _reason(problem: dict[str, Any]) -> str:
     elif problem.get("path"):
         where = f" ({problem['path']})"
     message = " ".join(str(problem["message"]).split())
-    return f"{message}{where}"
+    # ⚠️ The message may quote the text of the submitter: it is written as plain text, never as Markdown of the bot.
+    return md(f"{message}{where}")
 
 
 def _post(number: int, status: str, digest: str, text: str, *, close: bool = False) -> dict[str, Any]:

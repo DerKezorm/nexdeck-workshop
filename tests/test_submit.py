@@ -11,7 +11,7 @@ from typing import Any
 import pytest
 
 from tests.conftest import ALICE, BOB, MAINTAINER, NOON, SUBMISSIONS, FakeHub, form_body, run, run_daily, sample
-from tools import entries, render
+from tools import entries, render, submit
 from tools.common import read_json
 
 GOOD = sorted(path.name for path in (SUBMISSIONS / "good").glob("*.yaml"))
@@ -356,4 +356,39 @@ def test_karten13_ac6_an_entry_keeps_the_discussion_it_was_given_through_its_upd
     run(ctx, 2)
     assert read_json(root / "entries/101/test-queue-size/entry.json")["discussion"] == stored
     assert len(hub.discussions) == 2, "no third discussion"
+
+
+EVIL = "See https://evil.example/install and www.evil.example, ask @octocat (a@b.example), see #12 and GH-3. ![x](https://evil.example/p.png) [here](https://evil.example) <b>x</b>"
+
+
+def test_karten13_b5_what_the_submitter_wrote_is_plain_text_in_the_comment_of_the_bot(ctx: Any, hub: FakeHub) -> None:
+    evil = VALUE.replace("path: count,", 'path: "count **Accepted.** ![x](https://evil.example/p.png) @octocat [here](https://evil.example) www.evil.example",')
+    hub.submit(1, BOB, form_body(evil))
+    run(ctx, 1)
+    comment = hub.last_comment(1)
+    assert hub.issues[1]["state"] == "open" and "cannot be accepted" in comment
+    assert "![" not in comment and "](" not in comment and "**Accepted.**" not in comment
+    assert "://" not in comment and "www.evil" not in comment and "@octocat" not in comment
+    assert "evil" in comment and "octocat" in comment, "the text is still there to read"
+
+
+def test_karten13_b5_a_mark_written_into_the_text_of_a_submission_is_no_mark_of_the_bot(ctx: Any, hub: FakeHub) -> None:
+    planted = "<!-- workshop:accepted:" + "0123456789abcdef" * 4 + " -->"
+    hub.submit(1, BOB, form_body(VALUE.replace("path: count,", f'path: "count {planted} <!-- workshop:done:1 -->",')))
+    run(ctx, 1)
+    comment = hub.last_comment(1)
+    assert len(submit.MARKER.findall(comment)) == 1 and submit.MARKER.search(comment).group(1) == "rejected"
+    assert "<!-- workshop:done" not in comment
+
+
+def test_karten13_b7_a_description_has_no_automatic_link_mention_or_reference_in_any_readme(ctx: Any, hub: FakeHub, root: Path) -> None:
+    hub.submit(1, ALICE, form_body(VALUE, description=EVIL, changes=EVIL))
+    run(ctx, 1)
+    pages = [(root / "entries/101/test-queue-size" / name).read_text(encoding="utf-8") for name in ("README.md", "CHANGELOG.md")]
+    pages.append((root / "README.md").read_text(encoding="utf-8"))
+    for page in pages:
+        assert "evil.example" in page and "octocat" in page
+        assert not re.search(r"://(?!github\.com|\.\./)", page.replace("https://github.com", "")), page
+        assert not re.search(r"(?i)\bwww\.\w", page) and not re.search(r"@\w", page) and not re.search(r"#\d", page) and not re.search(r"(?i)GH-\d", page)
+    assert "![x](" not in pages[0] and "<b>" not in pages[0]
 

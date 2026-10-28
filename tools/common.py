@@ -85,13 +85,25 @@ def plain(value: Any) -> str:
 _MARKDOWN = re.compile(r"([\\`*_{}\[\]()#+!|<>~&])")
 
 
+#: Zero-width space: breaks a word GitHub would turn into a link or a mention without changing how the text reads.
+BREAK = "​"
+_WWW = re.compile(r"(www)\.", re.IGNORECASE)
+_GH = re.compile(r"(GH-)", re.IGNORECASE)
+
+
 def md(text: str) -> str:
     """Text of somebody else for a Markdown page: every sign that means something there is written as itself.
 
     ⚠️ A description is plain text everywhere it is shown (KARTEN-13 EC-8). HTML, a script and a picture from another
     place come out as the characters they are made of; the only pictures on a page are the ones the action drew.
+    GitHub also makes links out of plain words (an address, ``www.``, an at sign with a name, ``#12``), which no escape
+    sign stops, so those get a zero-width space inside: still readable, no link or mention any more.
     """
-    return _MARKDOWN.sub(r"\\\1", clean(text)).replace("\n", "  \n")
+    out = _MARKDOWN.sub(r"\\\1", clean(text))
+    out = _WWW.sub(r"\1" + BREAK + ".", out)
+    out = _GH.sub(r"\1" + BREAK, out)
+    out = out.replace("://", ":" + BREAK + "//").replace("@", "@" + BREAK).replace("\\#", "\\#" + BREAK)
+    return out.replace("\n", "  \n")
 
 
 def version_tuple(text: str) -> tuple[int, ...]:
