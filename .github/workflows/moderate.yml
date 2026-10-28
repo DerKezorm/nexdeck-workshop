@@ -1,0 +1,62 @@
+name: moderate
+
+# The commands of the comments: /remove (a maintainer), /withdraw (the author), /recheck (the author or a maintainer);
+# and the manual removal of an entry. The person is taken from the event, never from what a comment says.
+on:
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      entry:
+        description: "The id of the entry, such as 123456/queue-size"
+        required: true
+      level:
+        description: "How bad"
+        type: choice
+        options:
+          - harmful
+          - not_useful
+        required: true
+      reason:
+        description: "The reason, in one sentence"
+        required: true
+
+permissions:
+  contents: write
+  issues: write
+  discussions: write
+
+concurrency:
+  group: workshop-write
+  cancel-in-progress: false
+
+jobs:
+  moderate:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.issue.pull_request == null && github.event.comment.user.type != 'Bot' &&
+       (startsWith(github.event.comment.body, '/remove') || startsWith(github.event.comment.body, '/withdraw') || startsWith(github.event.comment.body, '/recheck')))
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install -r requirements.txt -r kit/requirements.txt -r requirements-render.txt
+      - name: Install the browser, for /recheck only
+        if: github.event_name == 'issue_comment' && startsWith(github.event.comment.body, '/recheck')
+        run: python -m playwright install --with-deps chromium
+      - name: Run the command
+        run: python -m tools.moderate ${{ github.event_name == 'workflow_dispatch' && '--dispatch' || '' }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          ENTRY: ${{ inputs.entry }}
+          LEVEL: ${{ inputs.level }}
+          REASON: ${{ inputs.reason }}
+      - name: Push
+        run: .github/scripts/push.sh "Update the workshop from a command"
+      - name: Comment and close
+        run: python -m tools.publish
+        env:
+          GITHUB_TOKEN: ${{ github.token }}

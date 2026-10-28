@@ -1,0 +1,13 @@
+nexdeck-card: 1
+slug: test-queue-flush
+name: Queue with a button
+version: 1.0.0
+description: The queue size, and a button that empties it.
+requires: [jsonapi]
+requests: [{id: q, path: /api/queue}]
+form: value
+value: {path: count, label: Queue, format: number}
+buttons:
+  - {id: flush, label: Flush, method: POST, path: /api/queue/flush, confirm: true}
+demo:
+  q: {count: 3}

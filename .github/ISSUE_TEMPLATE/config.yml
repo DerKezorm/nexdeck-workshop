@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: How to submit
+    url: https://github.com/DerKezorm/nexdeck-workshop/blob/main/CONTRIBUTING.md
+    about: Read this first. A submission is a card or a connection, made in nexdeck or written here.

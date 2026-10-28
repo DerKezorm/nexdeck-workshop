@@ -1,0 +1,6 @@
+# expect: test
+nexdeck: integration
+short: test-no-test
+name: No test
+category: other
+auth: {type: none}

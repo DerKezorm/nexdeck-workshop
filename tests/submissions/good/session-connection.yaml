@@ -1,0 +1,19 @@
+nexdeck: integration
+short: test-box
+name: Example box
+description: A box that signs in with a user and a password.
+category: other
+fields:
+  - {name: user, label: User, required: true}
+  - {name: password, type: secret, label: Password, required: true}
+auth:
+  type: session
+  login: /api/login
+  send: json
+  body: {username: "{user}", password: "{password}"}
+  ticket: {from: json, at: token}
+  pass: {as: header, header: Authorization, value: "Bearer {ticket}"}
+test: /api/status
+reads:
+  - {path: /api/items, label: Items}
+  - {path: /api/status, label: Status}

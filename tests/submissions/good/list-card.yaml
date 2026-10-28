@@ -1,0 +1,16 @@
+nexdeck-card: 1
+slug: test-downloads
+name: Downloads
+version: 1.0.0
+description: The torrents of a client, with their progress.
+requires: [jsonapi]
+requests: [{id: torrents, path: /api/torrents}]
+form: list
+rows: {select: "@"}
+item:
+  title: name
+  value: {path: progress, format: percent}
+demo:
+  torrents:
+    - {name: Example Linux ISO, progress: 0.42}
+    - {name: Holiday photos, progress: 1}

@@ -1,0 +1,511 @@
+{
+  "$defs": {
+    "Auth": {
+      "additionalProperties": false,
+      "description": "How a request proves who asks.",
+      "properties": {
+        "type": {
+          "default": "none",
+          "enum": [
+            "none",
+            "header",
+            "basic",
+            "query",
+            "session"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "header": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9-]{0,59}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Header"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "user": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "User"
+        },
+        "password": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Password"
+        },
+        "param": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9_.-]{1,60}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Param"
+        },
+        "login": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Login"
+        },
+        "send": {
+          "anyOf": [
+            {
+              "enum": [
+                "json",
+                "form"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Send"
+        },
+        "body": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Body"
+        },
+        "ticket": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TicketAt"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "pass": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PassOn"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "Auth",
+      "type": "object"
+    },
+    "DefinedField": {
+      "additionalProperties": false,
+      "description": "One thing asked when a connection of this kind is set up (the address is always asked first).",
+      "properties": {
+        "name": {
+          "pattern": "^[a-z][a-z0-9_]{0,31}$",
+          "title": "Name",
+          "type": "string"
+        },
+        "type": {
+          "default": "text",
+          "enum": [
+            "text",
+            "secret",
+            "number",
+            "switch"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 40,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "help": {
+          "default": "",
+          "maxLength": 300,
+          "title": "Help",
+          "type": "string"
+        },
+        "placeholder": {
+          "default": "",
+          "maxLength": 100,
+          "title": "Placeholder",
+          "type": "string"
+        },
+        "required": {
+          "default": false,
+          "title": "Required",
+          "type": "boolean"
+        },
+        "default": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Default"
+        }
+      },
+      "required": [
+        "name",
+        "label"
+      ],
+      "title": "DefinedField",
+      "type": "object"
+    },
+    "PassOn": {
+      "additionalProperties": false,
+      "description": "How the ticket travels with every request.",
+      "properties": {
+        "as": {
+          "enum": [
+            "header",
+            "cookie",
+            "query"
+          ],
+          "title": "As",
+          "type": "string"
+        },
+        "header": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9-]{0,59}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Header"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9_.-]{1,80}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "param": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9_.-]{1,60}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Param"
+        }
+      },
+      "required": [
+        "as"
+      ],
+      "title": "PassOn",
+      "type": "object"
+    },
+    "Read": {
+      "additionalProperties": false,
+      "description": "One thing worth asking of the service, offered in the step that picks the data of a card.",
+      "properties": {
+        "path": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "label"
+      ],
+      "title": "Read",
+      "type": "object"
+    },
+    "TicketAt": {
+      "additionalProperties": false,
+      "description": "Where the ticket of a sign-in is: a value of the JSON answer (``at`` is a JMESPath) or a cookie.",
+      "properties": {
+        "from": {
+          "enum": [
+            "json",
+            "cookie"
+          ],
+          "title": "From",
+          "type": "string"
+        },
+        "at": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "At"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9_.-]{1,80}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        }
+      },
+      "required": [
+        "from"
+      ],
+      "title": "TicketAt",
+      "type": "object"
+    },
+    "VersionRead": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "at": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "at"
+      ],
+      "title": "VersionRead",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "An own connection, as written.",
+  "properties": {
+    "nexdeck": {
+      "const": "integration",
+      "title": "Nexdeck",
+      "type": "string"
+    },
+    "short": {
+      "pattern": "^[a-z0-9][a-z0-9_-]{0,39}$",
+      "title": "Short",
+      "type": "string"
+    },
+    "name": {
+      "maxLength": 60,
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+    },
+    "logo": {
+      "default": "",
+      "title": "Logo",
+      "type": "string"
+    },
+    "description": {
+      "default": "",
+      "maxLength": 300,
+      "title": "Description",
+      "type": "string"
+    },
+    "category": {
+      "default": "other",
+      "pattern": "^[a-z]{3,20}$",
+      "title": "Category",
+      "type": "string"
+    },
+    "fields": {
+      "items": {
+        "$ref": "#/$defs/DefinedField"
+      },
+      "maxItems": 12,
+      "title": "Fields",
+      "type": "array"
+    },
+    "auth": {
+      "$ref": "#/$defs/Auth"
+    },
+    "test": {
+      "maxLength": 500,
+      "minLength": 1,
+      "title": "Test",
+      "type": "string"
+    },
+    "test_expects": {
+      "default": "any",
+      "enum": [
+        "json",
+        "any"
+      ],
+      "title": "Test Expects",
+      "type": "string"
+    },
+    "reads": {
+      "items": {
+        "$ref": "#/$defs/Read"
+      },
+      "maxItems": 30,
+      "title": "Reads",
+      "type": "array"
+    },
+    "check": {
+      "anyOf": [
+        {
+          "maxLength": 500,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Check"
+    },
+    "version": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/VersionRead"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "github": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Github"
+    }
+  },
+  "required": [
+    "nexdeck",
+    "short",
+    "name",
+    "test"
+  ],
+  "title": "IntegrationDefinition",
+  "type": "object"
+}

@@ -1,0 +1,1 @@
+function s(t){const e=document.querySelector(`[data-widget="${t}"]`);if(!e)return!1;const o=window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;return e.scrollIntoView({behavior:o?"auto":"smooth",block:"center"}),e.classList.add("nd-focus"),window.setTimeout(()=>e.classList.remove("nd-focus"),1800),!0}export{s as f};

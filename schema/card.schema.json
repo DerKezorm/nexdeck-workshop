@@ -1,0 +1,3148 @@
+{
+  "$defs": {
+    "BadgeBlock": {
+      "additionalProperties": false,
+      "description": "A small label; the rules of its value colour it.",
+      "properties": {
+        "id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_]{0,29}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A short name, to point at the block: the main value, a sparkline's history. Once per card.",
+          "title": "Id"
+        },
+        "type": {
+          "const": "badge",
+          "title": "Type",
+          "type": "string"
+        },
+        "text": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                {
+                  "additionalProperties": {
+                    "maxLength": 200,
+                    "type": "string"
+                  },
+                  "propertyNames": {
+                    "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$"
+                  },
+                  "type": "object"
+                }
+              ],
+              "description": "A text, or one text per language such as {en: Queue, de: Warteschlange}. English is the fallback."
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Text"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Val"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "color": {
+          "default": "muted",
+          "enum": [
+            "text",
+            "accent",
+            "green",
+            "yellow",
+            "red",
+            "muted",
+            "blue",
+            "violet",
+            "pink",
+            "orange"
+          ],
+          "title": "Color",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "BadgeBlock",
+      "type": "object"
+    },
+    "BuilderCard": {
+      "additionalProperties": false,
+      "description": "A card put together from blocks (KARTEN-7): the layout is the author's, the values come from the answers like on any form.",
+      "properties": {
+        "nexdeck-card": {
+          "description": "The version of this format. Today 1.",
+          "title": "Nexdeck-Card",
+          "type": "integer"
+        },
+        "slug": {
+          "description": "The short name: lower case letters, digits and hyphens.",
+          "pattern": "^[a-z0-9][a-z0-9-]{0,59}$",
+          "title": "Slug",
+          "type": "string"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "maxLength": 60,
+              "type": "string"
+            },
+            {
+              "additionalProperties": {
+                "maxLength": 60,
+                "type": "string"
+              },
+              "propertyNames": {
+                "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$"
+              },
+              "type": "object"
+            }
+          ],
+          "description": "A text, or one text per language such as {en: Queue, de: Warteschlange}. English is the fallback.",
+          "title": "Name"
+        },
+        "version": {
+          "description": "The version of this card, such as 1.0.0.",
+          "title": "Version",
+          "type": "string"
+        },
+        "min_nexdeck": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The oldest nexdeck that runs this card, such as 0.48.0.",
+          "title": "Min Nexdeck"
+        },
+        "author": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Author"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "maxLength": 2000,
+                  "type": "string"
+                },
+                {
+                  "additionalProperties": {
+                    "maxLength": 2000,
+                    "type": "string"
+                  },
+                  "propertyNames": {
+                    "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$"
+                  },
+                  "type": "object"
+                }
+              ],
+              "description": "A text, or one text per language such as {en: Queue, de: Warteschlange}. English is the fallback."
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "category": {
+          "anyOf": [
+            {
+              "maxLength": 40,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Category"
+        },
+        "requires": {
+          "description": "The connection the card needs: a kind such as sonarr, jsonapi or custom:my-service. Several mean any one of them.",
+          "items": {
+            "pattern": "^(custom:)?[a-z0-9][a-z0-9_-]{0,59}$",
+            "type": "string"
+          },
+          "maxItems": 10,
+          "minItems": 1,
+          "title": "Requires",
+          "type": "array"
+        },
+        "requests": {
+          "items": {
+            "$ref": "#/$defs/Request"
+          },
+          "maxItems": 5,
+          "minItems": 1,
+          "title": "Requests",
+          "type": "array"
+        },
+        "rules": {
+          "description": "Colour the whole card. Each rule names what it looks at.",
+          "items": {
+            "$ref": "#/$defs/Rule"
+          },
+          "maxItems": 10,
+          "title": "Rules",
+          "type": "array"
+        },
+        "demo": {
+          "additionalProperties": true,
+          "description": "One example answer per request id; fills the preview, the demo mode and the shop picture.",
+          "title": "Demo",
+          "type": "object"
+        },
+        "size": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Size"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "min_size": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Size"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "buttons": {
+          "description": "Up to 10 buttons, each one request that changes something at the service (KARTEN-8).",
+          "items": {
+            "$ref": "#/$defs/Button"
+          },
+          "maxItems": 10,
+          "title": "Buttons",
+          "type": "array"
+        },
+        "form": {
+          "const": "builder",
+          "title": "Form",
+          "type": "string"
+        },
+        "blocks": {
+          "description": "The blocks of the card, one under the other. Up to 100 in all, 6 levels deep.",
+          "items": {
+            "discriminator": {
+              "mapping": {
+                "badge": "#/$defs/BadgeBlock",
+                "button": "#/$defs/ButtonBlock",
+                "column": "#/$defs/ColumnBlock",
+                "divider": "#/$defs/DividerBlock",
+                "image": "#/$defs/ImageBlock",
+                "list": "#/$defs/ListBlock",
+                "progress": "#/$defs/ProgressBlock",
+                "row": "#/$defs/RowBlock",
+                "sparkline": "#/$defs/SparklineBlock",
+                "symbol": "#/$defs/SymbolBlock",
+                "text": "#/$defs/TextBlock",
+                "value": "#/$defs/ValueBlock"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/$defs/RowBlock"
+              },
+              {
+                "$ref": "#/$defs/ColumnBlock"
+              },
+              {
+                "$ref": "#/$defs/DividerBlock"
+              },
+              {
+                "$ref": "#/$defs/TextBlock"
+              },
+              {
+                "$ref": "#/$defs/ValueBlock"
+              },
+              {
+                "$ref": "#/$defs/BadgeBlock"
+              },
+              {
+                "$ref": "#/$defs/SymbolBlock"
+              },
+              {
+                "$ref": "#/$defs/ImageBlock"
+              },
+              {
+                "$ref": "#/$defs/ProgressBlock"
+              },
+              {
+                "$ref": "#/$defs/SparklineBlock"
+              },
+              {
+                "$ref": "#/$defs/ListBlock"
+              },
+              {
+                "$ref": "#/$defs/ButtonBlock"
+              }
+            ]
+          },
+          "minItems": 1,
+          "title": "Blocks",
+          "type": "array"
+        },
+        "main": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_]{0,29}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The id of the value block that is the card's main value. With one, the card can be a tile of key figures.",
+          "title": "Main"
+        },
+        "rows": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Rows"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The rows a list block repeats its blocks for (at most 50). Needed when the card has a list."
+        }
+      },
+      "required": [
+        "nexdeck-card",
+        "slug",
+        "name",
+        "version",
+        "requires",
+        "requests",
+        "form",
+        "blocks"
+      ],
+      "title": "BuilderCard",
+      "type": "object"
+    },
+    "Button": {
+      "additionalProperties": false,
+      "description": "One button: what it is called, where it hangs, and the one request it makes.",
+      "properties": {
+        "id": {
+          "pattern": "^[a-z][a-z0-9_]{0,29}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "maxLength": 40,
+              "type": "string"
+            },
+            {
+              "additionalProperties": {
+                "maxLength": 40,
+                "type": "string"
+              },
+              "propertyNames": {
+                "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$"
+              },
+              "type": "object"
+            }
+          ],
+          "description": "A text, or one text per language such as {en: Queue, de: Warteschlange}. English is the fallback.",
+          "title": "Label"
+        },
+        "icon": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z0-9][a-z0-9-]{0,39}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A Lucide icon, such as pause or trash.",
+          "title": "Icon"
+        },
+        "where": {
+          "default": "card",
+          "description": "On the card, or on every row of a list or of pictures.",
+          "enum": [
+            "card",
+            "row"
+          ],
+          "title": "Where",
+          "type": "string"
+        },
+        "method": {
+          "description": "POST, PUT, PATCH or DELETE.",
+          "enum": [
+            "POST",
+            "PUT",
+            "PATCH",
+            "DELETE"
+          ],
+          "title": "Method",
+          "type": "string"
+        },
+        "path": {
+          "description": "Underneath the connection's address, such as /api/v2/torrents/pause. Placeholders such as {id} take values of the data.",
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "send": {
+          "default": "json",
+          "description": "How the body goes: as JSON, or as a form (a flat body).",
+          "enum": [
+            "json",
+            "form"
+          ],
+          "title": "Send",
+          "type": "string"
+        },
+        "body": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "What is sent. A value that is exactly a placeholder keeps its type (a number stays a number); a placeholder inside a text is put in as text. At most 3 levels and 30 keys.",
+          "title": "Body"
+        },
+        "confirm": {
+          "default": false,
+          "description": "Ask before it runs.",
+          "title": "Confirm",
+          "type": "boolean"
+        },
+        "danger": {
+          "default": false,
+          "description": "Red, and asks twice before it runs.",
+          "title": "Danger",
+          "type": "boolean"
+        },
+        "asks": {
+          "description": "Blanks whoever presses the button fills in.",
+          "items": {
+            "$ref": "#/$defs/ButtonAsk"
+          },
+          "maxItems": 5,
+          "title": "Asks",
+          "type": "array"
+        },
+        "answer": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A JMESPath expression in the service's answer whose value is shown instead of Done.",
+          "title": "Answer"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "method",
+        "path"
+      ],
+      "title": "Button",
+      "type": "object"
+    },
+    "ButtonAsk": {
+      "additionalProperties": false,
+      "description": "A blank whoever presses the button fills in: a number in a range, a short text, or one of a list.",
+      "properties": {
+        "name": {
+          "description": "Used in the button as {ask.<name>}.",
+          "pattern": "^[a-z][a-z0-9_]{0,29}$",
+          "title": "Name",
+          "type": "string"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "type": "string"
+            },
+            {
+              "additionalProperties": {
+                "maxLength": 80,
+                "type": "string"
+              },
+              "propertyNames": {
+                "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$"
+              },
+              "type": "object"
+            }
+          ],
+          "description": "The question, such as How many minutes?",
+          "title": "Label"
+        },
+        "type": {
+          "enum": [
+            "number",
+            "text",
+            "choice"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "min": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "number: the smallest value.",
+          "title": "Min"
+        },
+        "max": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "number: the largest value.",
+          "title": "Max"
+        },
+        "step": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "number: the steps between values; a whole step takes whole numbers only.",
+          "title": "Step"
+        },
+        "max_length": {
+          "anyOf": [
+            {
+              "maximum": 400,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "text: the most characters, 100 when left out.",
+          "title": "Max Length"
+        },
+        "options": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/Choice"
+              },
+              "maxItems": 30,
+              "minItems": 1,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "choice: what may be picked.",
+          "title": "Options"
+        }
+      },
+      "required": [
+        "name",
+        "label",
+        "type"
+      ],
+      "title": "ButtonAsk",
+      "type": "object"
+    },
+    "ButtonBlock": {
+      "additionalProperties": false,
+      "description": "A button of the card's ``buttons``, by its id: on the card, or on every row of a list.",
+      "properties": {
+        "id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_]{0,29}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A short name, to point at the block: the main value, a sparkline's history. Once per card.",
+          "title": "Id"
+        },
+        "type": {
+          "const": "button",
+          "title": "Type",
+          "type": "string"
+        },
+        "button": {
+          "description": "The id of one of the buttons of the card.",
+          "pattern": "^[a-z][a-z0-9_]{0,29}$",
+          "title": "Button",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "button"
+      ],
+      "title": "ButtonBlock",
+      "type": "object"
+    },
+    "Choice": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Value",
+          "type": "string"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "maxLength": 40,
+              "type": "string"
+            },
+            {
+              "additionalProperties": {
+                "maxLength": 40,
+                "type": "string"
+              },
+              "propertyNames": {
+                "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$"
+              },
+              "type": "object"
+            }
+          ],
+          "description": "A text, or one text per language such as {en: Queue, de: Warteschlange}. English is the fallback.",
+          "title": "Label"
+        }
+      },
+      "required": [
+        "value",
+        "label"
+      ],
+      "title": "Choice",
+      "type": "object"
+    },
+    "ColumnBlock": {
+      "additionalProperties": false,
+      "description": "Blocks one under the other.",
+      "properties": {
+        "id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_]{0,29}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A short name, to point at the block: the main value, a sparkline's history. Once per card.",
+          "title": "Id"
+        },
+        "type": {
+          "const": "column",
+          "title": "Type",
+          "type": "string"
+        },
+        "children": {
+          "items": {
+            "discriminator": {
+              "mapping": {
+                "badge": "#/$defs/BadgeBlock",
+                "button": "#/$defs/ButtonBlock",
+                "column": "#/$defs/ColumnBlock",
+                "divider": "#/$defs/DividerBlock",
+                "image": "#/$defs/ImageBlock",
+                "list": "#/$defs/ListBlock",
+                "progress": "#/$defs/ProgressBlock",
+                "row": "#/$defs/RowBlock",
+                "sparkline": "#/$defs/SparklineBlock",
+                "symbol": "#/$defs/SymbolBlock",
+                "text": "#/$defs/TextBlock",
+                "value": "#/$defs/ValueBlock"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/$defs/RowBlock"
+              },
+              {
+                "$ref": "#/$defs/ColumnBlock"
+              },
+              {
+                "$ref": "#/$defs/DividerBlock"
+              },
+              {
+                "$ref": "#/$defs/TextBlock"
+              },
+              {
+                "$ref": "#/$defs/ValueBlock"
+              },
+              {
+                "$ref": "#/$defs/BadgeBlock"
+              },
+              {
+                "$ref": "#/$defs/SymbolBlock"
+              },
+              {
+                "$ref": "#/$defs/ImageBlock"
+              },
+              {
+                "$ref": "#/$defs/ProgressBlock"
+              },
+              {
+                "$ref": "#/$defs/SparklineBlock"
+              },
+              {
+                "$ref": "#/$defs/ListBlock"
+              },
+              {
+                "$ref": "#/$defs/ButtonBlock"
+              }
+            ]
+          },
+          "title": "Children",
+          "type": "array"
+        },
+        "gap": {
+          "default": "m",
+          "enum": [
+            "none",
+            "s",
+            "m",
+            "l"
+          ],
+          "title": "Gap",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "ColumnBlock",
+      "type": "object"
+    },
+    "DividerBlock": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_]{0,29}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A short name, to point at the block: the main value, a sparkline's history. Once per card.",
+          "title": "Id"
+        },
+        "type": {
+          "const": "divider",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "DividerBlock",
+      "type": "object"
+    },
+    "Filter": {
+      "additionalProperties": false,
+      "description": "Keep the rows whose ``field`` stands in this relation to ``value``.",
+      "properties": {
+        "field": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Field",
+          "type": "string"
+        },
+        "op": {
+          "enum": [
+            "==",
+            "!=",
+            ">",
+            ">=",
+            "<",
+            "<=",
+            "contains",
+            "starts_with",
+            "ends_with"
+          ],
+          "title": "Op",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        }
+      },
+      "required": [
+        "field",
+        "op"
+      ],
+      "title": "Filter",
+      "type": "object"
+    },
+    "ImageBlock": {
+      "additionalProperties": false,
+      "description": "A picture the answers name: an address with http or https, or a path on the connection.",
+      "properties": {
+        "id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_]{0,29}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A short name, to point at the block: the main value, a sparkline's history. Once per card.",
+          "title": "Id"
+        },
+        "type": {
+          "const": "image",
+          "title": "Type",
+          "type": "string"
+        },
+        "src": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Val"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "height": {
+          "default": "m",
+          "enum": [
+            "s",
+            "m",
+            "l"
+          ],
+          "title": "Height",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "src"
+      ],
+      "title": "ImageBlock",
+      "type": "object"
+    },
+    "ListBlock": {
+      "additionalProperties": false,
+      "description": "The same blocks for every row of the card's ``rows``, at most 50.",
+      "properties": {
+        "id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_]{0,29}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A short name, to point at the block: the main value, a sparkline's history. Once per card.",
+          "title": "Id"
+        },
+        "type": {
+          "const": "list",
+          "title": "Type",
+          "type": "string"
+        },
+        "item": {
+          "description": "The blocks of one row. Paths in them are read inside the row. No list in here. Empty, like a new row, until the author fills it.",
+          "items": {
+            "discriminator": {
+              "mapping": {
+                "badge": "#/$defs/BadgeBlock",
+                "button": "#/$defs/ButtonBlock",
+                "column": "#/$defs/ColumnBlock",
+                "divider": "#/$defs/DividerBlock",
+                "image": "#/$defs/ImageBlock",
+                "list": "#/$defs/ListBlock",
+                "progress": "#/$defs/ProgressBlock",
+                "row": "#/$defs/RowBlock",
+                "sparkline": "#/$defs/SparklineBlock",
+                "symbol": "#/$defs/SymbolBlock",
+                "text": "#/$defs/TextBlock",
+                "value": "#/$defs/ValueBlock"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/$defs/RowBlock"
+              },
+              {
+                "$ref": "#/$defs/ColumnBlock"
+              },
+              {
+                "$ref": "#/$defs/DividerBlock"
+              },
+              {
+                "$ref": "#/$defs/TextBlock"
+              },
+              {
+                "$ref": "#/$defs/ValueBlock"
+              },
+              {
+                "$ref": "#/$defs/BadgeBlock"
+              },
+              {
+                "$ref": "#/$defs/SymbolBlock"
+              },
+              {
+                "$ref": "#/$defs/ImageBlock"
+              },
+              {
+                "$ref": "#/$defs/ProgressBlock"
+              },
+              {
+                "$ref": "#/$defs/SparklineBlock"
+              },
+              {
+                "$ref": "#/$defs/ListBlock"
+              },
+              {
+                "$ref": "#/$defs/ButtonBlock"
+              }
+            ]
+          },
+          "title": "Item",
+          "type": "array"
+        },
+        "empty": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "maxLength": 40,
+                  "type": "string"
+                },
+                {
+                  "additionalProperties": {
+                    "maxLength": 40,
+                    "type": "string"
+                  },
+                  "propertyNames": {
+                    "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$"
+                  },
+                  "type": "object"
+                }
+              ],
+              "description": "A text, or one text per language such as {en: Queue, de: Warteschlange}. English is the fallback."
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "What the list says when there are no rows. Left out, it says Nothing here.",
+          "title": "Empty"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "ListBlock",
+      "type": "object"
+    },
+    "ListCard": {
+      "additionalProperties": false,
+      "properties": {
+        "nexdeck-card": {
+          "description": "The version of this format. Today 1.",
+          "title": "Nexdeck-Card",
+          "type": "integer"
+        },
+        "slug": {
+          "description": "The short name: lower case letters, digits and hyphens.",
+          "pattern": "^[a-z0-9][a-z0-9-]{0,59}$",
+          "title": "Slug",
+          "type": "string"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "maxLength": 60,
+              "type": "string"
+            },
+            {
+              "additionalProperties": {
+                "maxLength": 60,
+                "type": "string"
+              },
+              "propertyNames": {
+                "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$"
+              },
+              "type": "object"
+            }
+          ],
+          "description": "A text, or one text per language such as {en: Queue, de: Warteschlange}. English is the fallback.",
+          "title": "Name"
+        },
+        "version": {
+          "description": "The version of this card, such as 1.0.0.",
+          "title": "Version",
+          "type": "string"
+        },
+        "min_nexdeck": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The oldest nexdeck that runs this card, such as 0.48.0.",
+          "title": "Min Nexdeck"
+        },
+        "author": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Author"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "maxLength": 2000,
+                  "type": "string"
+                },
+                {
+                  "additionalProperties": {
+                    "maxLength": 2000,
+                    "type": "string"
+                  },
+                  "propertyNames": {
+                    "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$"
+                  },
+                  "type": "object"
+                }
+              ],
+              "description": "A text, or one text per language such as {en: Queue, de: Warteschlange}. English is the fallback."
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "category": {
+          "anyOf": [
+            {
+              "maxLength": 40,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Category"
+        },
+        "requires": {
+          "description": "The connection the card needs: a kind such as sonarr, jsonapi or custom:my-service. Several mean any one of them.",
+          "items": {
+            "pattern": "^(custom:)?[a-z0-9][a-z0-9_-]{0,59}$",
+            "type": "string"
+          },
+          "maxItems": 10,
+          "minItems": 1,
+          "title": "Requires",
+          "type": "array"
+        },
+        "requests": {
+          "items": {
+            "$ref": "#/$defs/Request"
+          },
+          "maxItems": 5,
+          "minItems": 1,
+          "title": "Requests",
+          "type": "array"
+        },
+        "rules": {
+          "description": "Colour the whole card. Each rule names what it looks at.",
+          "items": {
+            "$ref": "#/$defs/Rule"
+          },
+          "maxItems": 10,
+          "title": "Rules",
+          "type": "array"
+        },
+        "demo": {
+          "additionalProperties": true,
+          "description": "One example answer per request id; fills the preview, the demo mode and the shop picture.",
+          "title": "Demo",
+          "type": "object"
+        },
+        "size": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Size"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "min_size": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Size"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "buttons": {
+          "description": "Up to 10 buttons, each one request that changes something at the service (KARTEN-8).",
+          "items": {
+            "$ref": "#/$defs/Button"
+          },
+          "maxItems": 10,
+          "title": "Buttons",
+          "type": "array"
+        },
+        "form": {
+          "const": "list",
+          "title": "Form",
+          "type": "string"
+        },
+        "rows": {
+          "$ref": "#/$defs/Rows"
+        },
+        "item": {
+          "$ref": "#/$defs/ListItem"
+        },
+        "empty": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "maxLength": 40,
+                  "type": "string"
+                },
+                {
+                  "additionalProperties": {
+                    "maxLength": 40,
+                    "type": "string"
+                  },
+                  "propertyNames": {
+                    "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$"
+                  },
+                  "type": "object"
+                }
+              ],
+              "description": "A text, or one text per language such as {en: Queue, de: Warteschlange}. English is the fallback."
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "What the card says when there are no rows. Left out, it says Nothing here.",
+          "title": "Empty"
+        }
+      },
+      "required": [
+        "nexdeck-card",
+        "slug",
+        "name",
+        "version",
+        "requires",
+        "requests",
+        "form",
+        "rows",
+        "item"
+      ],
+      "title": "ListCard",
+      "type": "object"
+    },
+    "ListItem": {
+      "additionalProperties": false,
+      "description": "What one row shows. Paths here are read inside the row.",
+      "properties": {
+        "title": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Val"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "subtitle": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Val"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "value": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Val"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "status": {
+          "description": "Colour of the row; a rule without a value looks at the row's value.",
+          "items": {
+            "$ref": "#/$defs/Rule"
+          },
+          "maxItems": 10,
+          "title": "Status",
+          "type": "array"
+        },
+        "link": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Val"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "image": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Val"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "title"
+      ],
+      "title": "ListItem",
+      "type": "object"
+    },
+    "PosterItem": {
+      "additionalProperties": false,
+      "properties": {
+        "image": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Val"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "title": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Val"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "subtitle": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Val"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "link": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Val"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "image",
+        "title"
+      ],
+      "title": "PosterItem",
+      "type": "object"
+    },
+    "PostersCard": {
+      "additionalProperties": false,
+      "properties": {
+        "nexdeck-card": {
+          "description": "The version of this format. Today 1.",
+          "title": "Nexdeck-Card",
+          "type": "integer"
+        },
+        "slug": {
+          "description": "The short name: lower case letters, digits and hyphens.",
+          "pattern": "^[a-z0-9][a-z0-9-]{0,59}$",
+          "title": "Slug",
+          "type": "string"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "maxLength": 60,
+              "type": "string"
+            },
+            {
+              "additionalProperties": {
+                "maxLength": 60,
+                "type": "string"
+              },
+              "propertyNames": {
+                "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$"
+              },
+              "type": "object"
+            }
+          ],
+          "description": "A text, or one text per language such as {en: Queue, de: Warteschlange}. English is the fallback.",
+          "title": "Name"
+        },
+        "version": {
+          "description": "The version of this card, such as 1.0.0.",
+          "title": "Version",
+          "type": "string"
+        },
+        "min_nexdeck": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The oldest nexdeck that runs this card, such as 0.48.0.",
+          "title": "Min Nexdeck"
+        },
+        "author": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Author"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "maxLength": 2000,
+                  "type": "string"
+                },
+                {
+                  "additionalProperties": {
+                    "maxLength": 2000,
+                    "type": "string"
+                  },
+                  "propertyNames": {
+                    "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$"
+                  },
+                  "type": "object"
+                }
+              ],
+              "description": "A text, or one text per language such as {en: Queue, de: Warteschlange}. English is the fallback."
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "category": {
+          "anyOf": [
+            {
+              "maxLength": 40,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Category"
+        },
+        "requires": {
+          "description": "The connection the card needs: a kind such as sonarr, jsonapi or custom:my-service. Several mean any one of them.",
+          "items": {
+            "pattern": "^(custom:)?[a-z0-9][a-z0-9_-]{0,59}$",
+            "type": "string"
+          },
+          "maxItems": 10,
+          "minItems": 1,
+          "title": "Requires",
+          "type": "array"
+        },
+        "requests": {
+          "items": {
+            "$ref": "#/$defs/Request"
+          },
+          "maxItems": 5,
+          "minItems": 1,
+          "title": "Requests",
+          "type": "array"
+        },
+        "rules": {
+          "description": "Colour the whole card. Each rule names what it looks at.",
+          "items": {
+            "$ref": "#/$defs/Rule"
+          },
+          "maxItems": 10,
+          "title": "Rules",
+          "type": "array"
+        },
+        "demo": {
+          "additionalProperties": true,
+          "description": "One example answer per request id; fills the preview, the demo mode and the shop picture.",
+          "title": "Demo",
+          "type": "object"
+        },
+        "size": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Size"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "min_size": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Size"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "buttons": {
+          "description": "Up to 10 buttons, each one request that changes something at the service (KARTEN-8).",
+          "items": {
+            "$ref": "#/$defs/Button"
+          },
+          "maxItems": 10,
+          "title": "Buttons",
+          "type": "array"
+        },
+        "form": {
+          "const": "posters",
+          "title": "Form",
+          "type": "string"
+        },
+        "rows": {
+          "$ref": "#/$defs/Rows"
+        },
+        "item": {
+          "$ref": "#/$defs/PosterItem"
+        },
+        "empty": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "maxLength": 40,
+                  "type": "string"
+                },
+                {
+                  "additionalProperties": {
+                    "maxLength": 40,
+                    "type": "string"
+                  },
+                  "propertyNames": {
+                    "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$"
+                  },
+                  "type": "object"
+                }
+              ],
+              "description": "A text, or one text per language such as {en: Queue, de: Warteschlange}. English is the fallback."
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "What the card says when there are no rows. Left out, it says Nothing here.",
+          "title": "Empty"
+        }
+      },
+      "required": [
+        "nexdeck-card",
+        "slug",
+        "name",
+        "version",
+        "requires",
+        "requests",
+        "form",
+        "rows",
+        "item"
+      ],
+      "title": "PostersCard",
+      "type": "object"
+    },
+    "ProgressBlock": {
+      "additionalProperties": false,
+      "description": "A bar for a value out of a largest value, 100 unless said otherwise.",
+      "properties": {
+        "id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_]{0,29}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A short name, to point at the block: the main value, a sparkline's history. Once per card.",
+          "title": "Id"
+        },
+        "type": {
+          "const": "progress",
+          "title": "Type",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Val"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "max": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "$ref": "#/$defs/Val"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": 100,
+          "description": "The value that fills the bar: a number, or a value of the answers.",
+          "title": "Max"
+        },
+        "color": {
+          "default": "accent",
+          "enum": [
+            "text",
+            "accent",
+            "green",
+            "yellow",
+            "red",
+            "muted",
+            "blue",
+            "violet",
+            "pink",
+            "orange"
+          ],
+          "title": "Color",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "value"
+      ],
+      "title": "ProgressBlock",
+      "type": "object"
+    },
+    "Request": {
+      "additionalProperties": false,
+      "description": "One request to the service, always a GET underneath the address of the connection.",
+      "properties": {
+        "id": {
+          "pattern": "^[a-z][a-z0-9_]{0,29}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "path": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "every": {
+          "anyOf": [
+            {
+              "pattern": "^\\d{1,5}[smh]$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "How often, such as 30s, 5m or 1h. At least 10 seconds.",
+          "title": "Every"
+        }
+      },
+      "required": [
+        "id",
+        "path"
+      ],
+      "title": "Request",
+      "type": "object"
+    },
+    "RowBlock": {
+      "additionalProperties": false,
+      "description": "Blocks side by side; they wrap onto a new line when the card is narrow.",
+      "properties": {
+        "id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_]{0,29}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A short name, to point at the block: the main value, a sparkline's history. Once per card.",
+          "title": "Id"
+        },
+        "type": {
+          "const": "row",
+          "title": "Type",
+          "type": "string"
+        },
+        "children": {
+          "items": {
+            "discriminator": {
+              "mapping": {
+                "badge": "#/$defs/BadgeBlock",
+                "button": "#/$defs/ButtonBlock",
+                "column": "#/$defs/ColumnBlock",
+                "divider": "#/$defs/DividerBlock",
+                "image": "#/$defs/ImageBlock",
+                "list": "#/$defs/ListBlock",
+                "progress": "#/$defs/ProgressBlock",
+                "row": "#/$defs/RowBlock",
+                "sparkline": "#/$defs/SparklineBlock",
+                "symbol": "#/$defs/SymbolBlock",
+                "text": "#/$defs/TextBlock",
+                "value": "#/$defs/ValueBlock"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/$defs/RowBlock"
+              },
+              {
+                "$ref": "#/$defs/ColumnBlock"
+              },
+              {
+                "$ref": "#/$defs/DividerBlock"
+              },
+              {
+                "$ref": "#/$defs/TextBlock"
+              },
+              {
+                "$ref": "#/$defs/ValueBlock"
+              },
+              {
+                "$ref": "#/$defs/BadgeBlock"
+              },
+              {
+                "$ref": "#/$defs/SymbolBlock"
+              },
+              {
+                "$ref": "#/$defs/ImageBlock"
+              },
+              {
+                "$ref": "#/$defs/ProgressBlock"
+              },
+              {
+                "$ref": "#/$defs/SparklineBlock"
+              },
+              {
+                "$ref": "#/$defs/ListBlock"
+              },
+              {
+                "$ref": "#/$defs/ButtonBlock"
+              }
+            ]
+          },
+          "title": "Children",
+          "type": "array"
+        },
+        "gap": {
+          "default": "m",
+          "enum": [
+            "none",
+            "s",
+            "m",
+            "l"
+          ],
+          "title": "Gap",
+          "type": "string"
+        },
+        "align": {
+          "default": "start",
+          "enum": [
+            "start",
+            "center",
+            "end",
+            "between"
+          ],
+          "title": "Align",
+          "type": "string"
+        },
+        "wrap": {
+          "default": true,
+          "title": "Wrap",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "RowBlock",
+      "type": "object"
+    },
+    "Rows": {
+      "additionalProperties": false,
+      "description": "A list in an answer: where it is, which rows, in which order, how many are shown.",
+      "properties": {
+        "select": {
+          "description": "A JMESPath expression that gives the list, such as records or data.items[?active].",
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Select",
+          "type": "string"
+        },
+        "filter": {
+          "items": {
+            "$ref": "#/$defs/Filter"
+          },
+          "maxItems": 10,
+          "title": "Filter",
+          "type": "array"
+        },
+        "sort": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Sort"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "limit": {
+          "anyOf": [
+            {
+              "maximum": 50,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "How many rows are shown, at most 50. Totals count all rows.",
+          "title": "Limit"
+        }
+      },
+      "required": [
+        "select"
+      ],
+      "title": "Rows",
+      "type": "object"
+    },
+    "Rule": {
+      "additionalProperties": false,
+      "description": "When [value] [op] [than], the colour is [then]. Without a value of its own it looks at the value it belongs to.",
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A path to what is compared; left out, the value the rule belongs to.",
+          "title": "Value"
+        },
+        "formula": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Formula"
+        },
+        "op": {
+          "enum": [
+            "==",
+            "!=",
+            ">",
+            ">=",
+            "<",
+            "<=",
+            "contains",
+            "starts_with",
+            "ends_with"
+          ],
+          "title": "Op",
+          "type": "string"
+        },
+        "than": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            }
+          ],
+          "title": "Than"
+        },
+        "then": {
+          "enum": [
+            "ok",
+            "warn",
+            "bad"
+          ],
+          "title": "Then",
+          "type": "string"
+        }
+      },
+      "required": [
+        "op",
+        "than",
+        "then"
+      ],
+      "title": "Rule",
+      "type": "object"
+    },
+    "Size": {
+      "additionalProperties": false,
+      "properties": {
+        "w": {
+          "maximum": 24,
+          "minimum": 1,
+          "title": "W",
+          "type": "integer"
+        },
+        "h": {
+          "maximum": 24,
+          "minimum": 1,
+          "title": "H",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "w",
+        "h"
+      ],
+      "title": "Size",
+      "type": "object"
+    },
+    "Sort": {
+      "additionalProperties": false,
+      "properties": {
+        "field": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Field",
+          "type": "string"
+        },
+        "desc": {
+          "default": false,
+          "title": "Desc",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "field"
+      ],
+      "title": "Sort",
+      "type": "object"
+    },
+    "SparklineBlock": {
+      "additionalProperties": false,
+      "description": "The course of a number over the last hours, drawn from what the card recorded; the id names the history.",
+      "properties": {
+        "id": {
+          "description": "Required: the history is kept under it.",
+          "pattern": "^[a-z][a-z0-9_]{0,29}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "sparkline",
+          "title": "Type",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Val"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "value"
+      ],
+      "title": "SparklineBlock",
+      "type": "object"
+    },
+    "StatsCard": {
+      "additionalProperties": false,
+      "properties": {
+        "nexdeck-card": {
+          "description": "The version of this format. Today 1.",
+          "title": "Nexdeck-Card",
+          "type": "integer"
+        },
+        "slug": {
+          "description": "The short name: lower case letters, digits and hyphens.",
+          "pattern": "^[a-z0-9][a-z0-9-]{0,59}$",
+          "title": "Slug",
+          "type": "string"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "maxLength": 60,
+              "type": "string"
+            },
+            {
+              "additionalProperties": {
+                "maxLength": 60,
+                "type": "string"
+              },
+              "propertyNames": {
+                "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$"
+              },
+              "type": "object"
+            }
+          ],
+          "description": "A text, or one text per language such as {en: Queue, de: Warteschlange}. English is the fallback.",
+          "title": "Name"
+        },
+        "version": {
+          "description": "The version of this card, such as 1.0.0.",
+          "title": "Version",
+          "type": "string"
+        },
+        "min_nexdeck": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The oldest nexdeck that runs this card, such as 0.48.0.",
+          "title": "Min Nexdeck"
+        },
+        "author": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Author"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "maxLength": 2000,
+                  "type": "string"
+                },
+                {
+                  "additionalProperties": {
+                    "maxLength": 2000,
+                    "type": "string"
+                  },
+                  "propertyNames": {
+                    "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$"
+                  },
+                  "type": "object"
+                }
+              ],
+              "description": "A text, or one text per language such as {en: Queue, de: Warteschlange}. English is the fallback."
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "category": {
+          "anyOf": [
+            {
+              "maxLength": 40,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Category"
+        },
+        "requires": {
+          "description": "The connection the card needs: a kind such as sonarr, jsonapi or custom:my-service. Several mean any one of them.",
+          "items": {
+            "pattern": "^(custom:)?[a-z0-9][a-z0-9_-]{0,59}$",
+            "type": "string"
+          },
+          "maxItems": 10,
+          "minItems": 1,
+          "title": "Requires",
+          "type": "array"
+        },
+        "requests": {
+          "items": {
+            "$ref": "#/$defs/Request"
+          },
+          "maxItems": 5,
+          "minItems": 1,
+          "title": "Requests",
+          "type": "array"
+        },
+        "rules": {
+          "description": "Colour the whole card. Each rule names what it looks at.",
+          "items": {
+            "$ref": "#/$defs/Rule"
+          },
+          "maxItems": 10,
+          "title": "Rules",
+          "type": "array"
+        },
+        "demo": {
+          "additionalProperties": true,
+          "description": "One example answer per request id; fills the preview, the demo mode and the shop picture.",
+          "title": "Demo",
+          "type": "object"
+        },
+        "size": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Size"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "min_size": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Size"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "buttons": {
+          "description": "Up to 10 buttons, each one request that changes something at the service (KARTEN-8).",
+          "items": {
+            "$ref": "#/$defs/Button"
+          },
+          "maxItems": 10,
+          "title": "Buttons",
+          "type": "array"
+        },
+        "form": {
+          "const": "stats",
+          "title": "Form",
+          "type": "string"
+        },
+        "stats": {
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Val"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "maxItems": 6,
+          "minItems": 2,
+          "title": "Stats",
+          "type": "array"
+        }
+      },
+      "required": [
+        "nexdeck-card",
+        "slug",
+        "name",
+        "version",
+        "requires",
+        "requests",
+        "form",
+        "stats"
+      ],
+      "title": "StatsCard",
+      "type": "object"
+    },
+    "SymbolBlock": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_]{0,29}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A short name, to point at the block: the main value, a sparkline's history. Once per card.",
+          "title": "Id"
+        },
+        "type": {
+          "const": "symbol",
+          "title": "Type",
+          "type": "string"
+        },
+        "icon": {
+          "description": "A Lucide icon, such as server or flame.",
+          "pattern": "^[a-z0-9][a-z0-9-]{0,39}$",
+          "title": "Icon",
+          "type": "string"
+        },
+        "color": {
+          "default": "text",
+          "enum": [
+            "text",
+            "accent",
+            "green",
+            "yellow",
+            "red",
+            "muted",
+            "blue",
+            "violet",
+            "pink",
+            "orange"
+          ],
+          "title": "Color",
+          "type": "string"
+        },
+        "size": {
+          "default": "m",
+          "enum": [
+            "xs",
+            "s",
+            "m",
+            "l",
+            "xl"
+          ],
+          "title": "Size",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "icon"
+      ],
+      "title": "SymbolBlock",
+      "type": "object"
+    },
+    "TextBlock": {
+      "additionalProperties": false,
+      "description": "A text of the author, or a value of the answers shown as a line.",
+      "properties": {
+        "id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_]{0,29}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A short name, to point at the block: the main value, a sparkline's history. Once per card.",
+          "title": "Id"
+        },
+        "type": {
+          "const": "text",
+          "title": "Type",
+          "type": "string"
+        },
+        "text": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                {
+                  "additionalProperties": {
+                    "maxLength": 200,
+                    "type": "string"
+                  },
+                  "propertyNames": {
+                    "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$"
+                  },
+                  "type": "object"
+                }
+              ],
+              "description": "A text, or one text per language such as {en: Queue, de: Warteschlange}. English is the fallback."
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A text, or one per language such as {en: Hello, de: Hallo}.",
+          "title": "Text"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Val"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A value of the answers, shown as text. Give this or text."
+        },
+        "size": {
+          "default": "m",
+          "enum": [
+            "xs",
+            "s",
+            "m",
+            "l",
+            "xl"
+          ],
+          "title": "Size",
+          "type": "string"
+        },
+        "weight": {
+          "default": "normal",
+          "enum": [
+            "normal",
+            "bold"
+          ],
+          "title": "Weight",
+          "type": "string"
+        },
+        "color": {
+          "default": "text",
+          "enum": [
+            "text",
+            "accent",
+            "green",
+            "yellow",
+            "red",
+            "muted",
+            "blue",
+            "violet",
+            "pink",
+            "orange"
+          ],
+          "title": "Color",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "TextBlock",
+      "type": "object"
+    },
+    "Total": {
+      "additionalProperties": false,
+      "description": "Count, add up or average a column of a list.",
+      "properties": {
+        "fn": {
+          "enum": [
+            "count",
+            "sum",
+            "min",
+            "max",
+            "avg"
+          ],
+          "title": "Fn",
+          "type": "string"
+        },
+        "rows": {
+          "$ref": "#/$defs/Rows"
+        },
+        "field": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The column, a path inside one row. Counting needs none.",
+          "title": "Field"
+        }
+      },
+      "required": [
+        "fn",
+        "rows"
+      ],
+      "title": "Total",
+      "type": "object"
+    },
+    "Val": {
+      "additionalProperties": false,
+      "description": "One value on the card: where it comes from, how it is shown and when it changes colour.\n\nExactly one of ``path``, ``formula``, ``template`` and ``total``.",
+      "properties": {
+        "path": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A JMESPath expression, such as records[0].title. Names with spaces go in double quotes.",
+          "title": "Path"
+        },
+        "formula": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A calculation such as {disk.used} / {disk.total} * 100.",
+          "title": "Formula"
+        },
+        "template": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A text with values in braces, such as S{seasonNumber}E{episodeNumber}.",
+          "title": "Template"
+        },
+        "total": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Total"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "label": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "maxLength": 40,
+                  "type": "string"
+                },
+                {
+                  "additionalProperties": {
+                    "maxLength": 40,
+                    "type": "string"
+                  },
+                  "propertyNames": {
+                    "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$"
+                  },
+                  "type": "object"
+                }
+              ],
+              "description": "A text, or one text per language such as {en: Queue, de: Warteschlange}. English is the fallback."
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Label"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "maxLength": 40,
+                  "type": "string"
+                },
+                {
+                  "additionalProperties": {
+                    "maxLength": 40,
+                    "type": "string"
+                  },
+                  "propertyNames": {
+                    "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$"
+                  },
+                  "type": "object"
+                }
+              ],
+              "description": "A text, or one text per language such as {en: Queue, de: Warteschlange}. English is the fallback."
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit"
+        },
+        "format": {
+          "anyOf": [
+            {
+              "enum": [
+                "text",
+                "number",
+                "bytes",
+                "rate",
+                "duration",
+                "ago",
+                "percent",
+                "date",
+                "datetime",
+                "time"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "How to show it. Bytes, rate and duration take bytes, bytes per second and seconds.",
+          "title": "Format"
+        },
+        "digits": {
+          "anyOf": [
+            {
+              "maximum": 6,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Digits"
+        },
+        "rules": {
+          "items": {
+            "$ref": "#/$defs/Rule"
+          },
+          "maxItems": 10,
+          "title": "Rules",
+          "type": "array"
+        }
+      },
+      "title": "Val",
+      "type": "object"
+    },
+    "ValueBlock": {
+      "additionalProperties": false,
+      "description": "A value with its label, unit and rules, the way a card of one number shows it. The fields of a value stand right here.",
+      "properties": {
+        "path": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A JMESPath expression, such as records[0].title. Names with spaces go in double quotes.",
+          "title": "Path"
+        },
+        "formula": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A calculation such as {disk.used} / {disk.total} * 100.",
+          "title": "Formula"
+        },
+        "template": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A text with values in braces, such as S{seasonNumber}E{episodeNumber}.",
+          "title": "Template"
+        },
+        "total": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Total"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "label": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "maxLength": 40,
+                  "type": "string"
+                },
+                {
+                  "additionalProperties": {
+                    "maxLength": 40,
+                    "type": "string"
+                  },
+                  "propertyNames": {
+                    "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$"
+                  },
+                  "type": "object"
+                }
+              ],
+              "description": "A text, or one text per language such as {en: Queue, de: Warteschlange}. English is the fallback."
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Label"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "maxLength": 40,
+                  "type": "string"
+                },
+                {
+                  "additionalProperties": {
+                    "maxLength": 40,
+                    "type": "string"
+                  },
+                  "propertyNames": {
+                    "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$"
+                  },
+                  "type": "object"
+                }
+              ],
+              "description": "A text, or one text per language such as {en: Queue, de: Warteschlange}. English is the fallback."
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit"
+        },
+        "format": {
+          "anyOf": [
+            {
+              "enum": [
+                "text",
+                "number",
+                "bytes",
+                "rate",
+                "duration",
+                "ago",
+                "percent",
+                "date",
+                "datetime",
+                "time"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "How to show it. Bytes, rate and duration take bytes, bytes per second and seconds.",
+          "title": "Format"
+        },
+        "digits": {
+          "anyOf": [
+            {
+              "maximum": 6,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Digits"
+        },
+        "rules": {
+          "items": {
+            "$ref": "#/$defs/Rule"
+          },
+          "maxItems": 10,
+          "title": "Rules",
+          "type": "array"
+        },
+        "type": {
+          "const": "value",
+          "title": "Type",
+          "type": "string"
+        },
+        "id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_]{0,29}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A short name, to point at the block: the main value of the card. Once per card.",
+          "title": "Id"
+        },
+        "size": {
+          "default": "l",
+          "enum": [
+            "xs",
+            "s",
+            "m",
+            "l",
+            "xl"
+          ],
+          "title": "Size",
+          "type": "string"
+        },
+        "color": {
+          "default": "text",
+          "enum": [
+            "text",
+            "accent",
+            "green",
+            "yellow",
+            "red",
+            "muted",
+            "blue",
+            "violet",
+            "pink",
+            "orange"
+          ],
+          "title": "Color",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "ValueBlock",
+      "type": "object"
+    },
+    "ValueCard": {
+      "additionalProperties": false,
+      "properties": {
+        "nexdeck-card": {
+          "description": "The version of this format. Today 1.",
+          "title": "Nexdeck-Card",
+          "type": "integer"
+        },
+        "slug": {
+          "description": "The short name: lower case letters, digits and hyphens.",
+          "pattern": "^[a-z0-9][a-z0-9-]{0,59}$",
+          "title": "Slug",
+          "type": "string"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "maxLength": 60,
+              "type": "string"
+            },
+            {
+              "additionalProperties": {
+                "maxLength": 60,
+                "type": "string"
+              },
+              "propertyNames": {
+                "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$"
+              },
+              "type": "object"
+            }
+          ],
+          "description": "A text, or one text per language such as {en: Queue, de: Warteschlange}. English is the fallback.",
+          "title": "Name"
+        },
+        "version": {
+          "description": "The version of this card, such as 1.0.0.",
+          "title": "Version",
+          "type": "string"
+        },
+        "min_nexdeck": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The oldest nexdeck that runs this card, such as 0.48.0.",
+          "title": "Min Nexdeck"
+        },
+        "author": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Author"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "maxLength": 2000,
+                  "type": "string"
+                },
+                {
+                  "additionalProperties": {
+                    "maxLength": 2000,
+                    "type": "string"
+                  },
+                  "propertyNames": {
+                    "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$"
+                  },
+                  "type": "object"
+                }
+              ],
+              "description": "A text, or one text per language such as {en: Queue, de: Warteschlange}. English is the fallback."
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "category": {
+          "anyOf": [
+            {
+              "maxLength": 40,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Category"
+        },
+        "requires": {
+          "description": "The connection the card needs: a kind such as sonarr, jsonapi or custom:my-service. Several mean any one of them.",
+          "items": {
+            "pattern": "^(custom:)?[a-z0-9][a-z0-9_-]{0,59}$",
+            "type": "string"
+          },
+          "maxItems": 10,
+          "minItems": 1,
+          "title": "Requires",
+          "type": "array"
+        },
+        "requests": {
+          "items": {
+            "$ref": "#/$defs/Request"
+          },
+          "maxItems": 5,
+          "minItems": 1,
+          "title": "Requests",
+          "type": "array"
+        },
+        "rules": {
+          "description": "Colour the whole card. Each rule names what it looks at.",
+          "items": {
+            "$ref": "#/$defs/Rule"
+          },
+          "maxItems": 10,
+          "title": "Rules",
+          "type": "array"
+        },
+        "demo": {
+          "additionalProperties": true,
+          "description": "One example answer per request id; fills the preview, the demo mode and the shop picture.",
+          "title": "Demo",
+          "type": "object"
+        },
+        "size": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Size"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "min_size": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Size"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "buttons": {
+          "description": "Up to 10 buttons, each one request that changes something at the service (KARTEN-8).",
+          "items": {
+            "$ref": "#/$defs/Button"
+          },
+          "maxItems": 10,
+          "title": "Buttons",
+          "type": "array"
+        },
+        "form": {
+          "const": "value",
+          "title": "Form",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Val"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": [
+        "nexdeck-card",
+        "slug",
+        "name",
+        "version",
+        "requires",
+        "requests",
+        "form",
+        "value"
+      ],
+      "title": "ValueCard",
+      "type": "object"
+    }
+  },
+  "discriminator": {
+    "mapping": {
+      "builder": "#/$defs/BuilderCard",
+      "list": "#/$defs/ListCard",
+      "posters": "#/$defs/PostersCard",
+      "stats": "#/$defs/StatsCard",
+      "value": "#/$defs/ValueCard"
+    },
+    "propertyName": "form"
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/ValueCard"
+    },
+    {
+      "$ref": "#/$defs/StatsCard"
+    },
+    {
+      "$ref": "#/$defs/ListCard"
+    },
+    {
+      "$ref": "#/$defs/PostersCard"
+    },
+    {
+      "$ref": "#/$defs/BuilderCard"
+    }
+  ],
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "nexdeck card"
+}

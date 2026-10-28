@@ -1,0 +1,12 @@
+# expect: needs nexdeck 99.0.0
+nexdeck-card: 1
+slug: test-too-new
+name: Too new
+version: 1.0.0
+min_nexdeck: 99.0.0
+requires: [jsonapi]
+requests: [{id: q, path: /api/queue}]
+form: value
+value: {path: count, label: Queue}
+demo:
+  q: {count: 1}

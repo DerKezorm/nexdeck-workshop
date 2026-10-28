@@ -1,0 +1,11 @@
+# expect: which acts
+nexdeck-card: 1
+slug: test-acting
+name: Acting read
+version: 1.0.0
+requires: [jsonapi]
+requests: [{id: q, path: "/api/queue?cmd=reboot"}]
+form: value
+value: {path: count, label: Queue}
+demo:
+  q: {count: 1}

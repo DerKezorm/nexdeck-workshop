@@ -1,0 +1,13 @@
+# expect: must be one of 'POST', 'PUT', 'PATCH' or 'DELETE'
+nexdeck-card: 1
+slug: test-button-get
+name: Button with GET
+version: 1.0.0
+requires: [jsonapi]
+requests: [{id: q, path: /api/queue}]
+form: value
+value: {path: count, label: Queue}
+buttons:
+  - {id: flush, label: Flush, method: GET, path: /api/queue/flush}
+demo:
+  q: {count: 1}

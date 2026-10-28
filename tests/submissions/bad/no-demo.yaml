@@ -1,0 +1,9 @@
+# expect: needs demo data
+nexdeck-card: 1
+slug: test-no-demo
+name: No demo
+version: 1.0.0
+requires: [jsonapi]
+requests: [{id: q, path: /api/queue}]
+form: value
+value: {path: count, label: Queue}

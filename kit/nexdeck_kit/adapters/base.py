@@ -1,0 +1,2463 @@
+"""The adapter contract.
+
+An adapter knows one service: which connection fields it needs, which widgets
+it offers, how to fetch their data, which actions it can run and what fake
+data it produces in demo mode. Everything an adapter returns is a
+``WidgetData``: a small, service-independent shape that the frontend renders
+with a handful of renderers. That is what makes thirty integrations
+maintainable by one person.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import hashlib
+import ipaddress
+import json
+import logging
+import math
+import re
+import socket
+import time
+from dataclasses import dataclass, field, replace
+from datetime import UTC, datetime
+from typing import Any, Literal
+from urllib.parse import quote, unquote, urlsplit
+
+import httpcore
+import httpx
+from pydantic import BaseModel, model_serializer
+from pydantic import Field as PydanticField
+
+logger = logging.getLogger("nexdeck.adapters")
+
+#: ``integrations`` is a list of connection numbers. Its ``options`` name the
+#: kinds that may be picked; the server checks both the kind and whether the
+#: person editing may build on that connection at all.
+FieldType = Literal["text", "password", "url", "number", "bool", "select", "integrations",
+                    "textarea", "timezone", "items", "choices", "colour", "board", "pictures", "cards", "date", "time"]
+#: ``items`` picks among the rows a card is showing; ``choices`` picks among
+#: values the service itself hands out, through ``Adapter.choices``;
+#: ``board`` picks one of this installation's own boards, which no service
+#: knows about; ``pictures`` is a list somebody builds by uploading files
+#: or naming addresses, not a text field with a syntax. ``cards`` picks other
+#: cards of the same page, for a card that holds them. ``date`` and ``time``
+#: are a day (2026-12-24) and a time of day (18:30), as the browser's own
+#: pickers write them.
+Status = Literal["ok", "warn", "bad", "unknown"]
+
+
+@dataclass(frozen=True)
+class Field:
+    """One configuration field of an integration or a widget."""
+
+    name: str
+    label: str
+    type: FieldType = "text"
+    required: bool = False
+    secret: bool = False
+    default: Any = None
+    help: str = ""
+    placeholder: str = ""
+    options: tuple[tuple[str, str], ...] = ()
+    #: A frontend helper drawn under the field, such as ``plex-signin``.
+    helper: str = ""
+    #: For a ``choices`` field: which other option names the integration whose
+    #: list this is. Empty means the widget's own integration, which is what
+    #: every such field meant until a card could point at somebody else's.
+    from_field: str = ""
+    #: Show this field only while another option has a given value, as
+    #: ``(name, value)``.
+    #:
+    #: ⚠️ An option that does nothing must not be on screen. The volume card
+    #: in its dial view still offered "usage bar" and "percentage", which are
+    #: parts of a list row, and a dial has no rows: three switches that moved
+    #: and changed nothing.
+    only_when: tuple[str, str] | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "label": self.label,
+            "type": self.type,
+            "required": self.required,
+            "secret": self.secret,
+            "default": self.default,
+            "help": self.help,
+            "placeholder": self.placeholder,
+            "options": [{"value": v, "label": lab} for v, lab in self.options],
+            "helper": self.helper,
+            "from_field": self.from_field,
+            "only_when": list(self.only_when) if self.only_when else None,
+        }
+
+
+#: How small each drawing is still usable at, in grid cells.
+#:
+#: ⚠️ Set per renderer, not per widget. Until 06.09.2026 the grid used a
+#: card's *default* size as its floor, so ``min_size`` did nothing and nobody
+#: noticed that 56 value cards claimed to work at one cell by one and 88 lists
+#: at two by one. The moment the floor became real, the weather card drew its
+#: sun on top of its own temperature. A number needs room for its label and
+#: its chips; a list needs room for two rows; a cover needs to be a cover.
+RENDERER_MIN: dict[str, tuple[int, int]] = {
+    "app": (1, 1),
+    "button": (1, 1),
+    "image": (1, 1),
+    "wol": (1, 1),
+    # A title or a line; one row high, and a column wide over a single column of cards.
+    "heading": (1, 1),
+    "clock": (2, 1),
+    # Days in large, a line under them.
+    "countdown": (2, 1),
+    # The time, the buttons under it.
+    "timer": (2, 2),
+    "text": (2, 1),
+    "search": (2, 1),
+    "value": (2, 2),
+    "gauge": (2, 2),
+    # A row of LEDs with its number above it; upright it wants the height.
+    "meter": (2, 2),
+    # Digits and nothing else; one row holds them.
+    "segments": (2, 1),
+    "list": (2, 2),
+    # One row holds the sentence ("3 things need attention"); the rows come with the height.
+    "attention": (2, 1),
+    # A few lines of the chronicle, each with its time.
+    "chronicle": (2, 2),
+    # Counts on top and the lines under them want the width of three.
+    "report": (3, 2),
+    "bookmarks": (2, 2),
+    "camera": (2, 2),
+    "iframe": (2, 2),
+    "counters": (2, 2),
+    "ask": (2, 2),
+    "ring": (2, 2),
+    "stats": (3, 2),
+    "feed": (3, 2),
+    "calendar": (3, 2),
+    "nowplaying": (3, 2),
+    # Two by two holds a cover with its play button on it; the rest of the
+    # player grows in as the card does.
+    "player": (2, 2),
+    "weather": (3, 2),
+    "posters": (3, 2),
+    # A card put together from blocks (KARTEN-7): two by two holds a heading row and a value; the rest comes with the size.
+    "builder": (2, 2),
+    "chart": (3, 2),
+    "log": (3, 2),
+    "timeline": (3, 2),
+    "bars": (3, 2),
+    # A strip of bars needs its width; two rows of services is the least worth showing.
+    "strips": (3, 2),
+    "inout": (3, 2),
+    # Five places round a house need room to stand apart.
+    "flow": (3, 3),
+    # Thirteen weeks of seven squares and a line of numbers under them.
+    "heatmap": (3, 2),
+    # A row of tabs and the card under it.
+    "tabs": (2, 2),
+    # A title and at least one row of cards inside.
+    "group": (3, 2),
+    # A tile with its number at least, two side by side.
+    "figures": (2, 2),
+    # A tree needs room to branch: three levels and a few boxes side by side.
+    "topology": (4, 3),
+}
+
+#: Pairs of metrics that are one line going in and one going out. A card that
+#: records both can draw them mirrored on one axis, in above and out below.
+INOUT_PAIRS: tuple[tuple[str, str], ...] = (
+    ("wan_down", "wan_up"), ("down", "up"), ("download", "upload"), ("rx", "tx"), ("sync_down", "sync_up"),
+)
+
+
+def inout_pair(metrics: tuple[str, ...] | list[str] | Any) -> tuple[str, str] | None:
+    """The first pair of in and out among a card's metrics, if it has one."""
+    names = set(metrics or ())
+    return next((pair for pair in INOUT_PAIRS if pair[0] in names and pair[1] in names), None)
+#: For a renderer nobody listed. Two by two is the smallest that holds a title
+#: and a line under it without one sitting on the other.
+DEFAULT_MIN = (2, 2)
+
+#: The drawings whose big number is a measured number, and so can be shown
+#: as a dial, LEDs, seven segments or a chart instead (issue #39).
+NUMBER_RENDERERS = ("value", "stats", "gauge")
+#: Views that show how full something is, and so need to know what full is.
+DIAL_VIEWS = ("gauge", "meter")
+#: Views that show one number and nothing else: the row a dial follows, the
+#: warning lines and the special cases of an adapter apply to all of them.
+SINGLE_NUMBER_VIEWS = ("gauge", "meter", "segments")
+#: The view that draws a dial card as its plain number with the rows under it.
+PLAIN_NUMBER_VIEW = "number"
+
+
+@dataclass(frozen=True)
+class WidgetType:
+    """One widget an adapter offers."""
+
+    kind: str
+    label: str
+    description: str
+    #: Which frontend renderer draws the data.
+    renderer: str
+    default_size: tuple[int, int] = (3, 2)
+    min_size: tuple[int, int] = (2, 1)
+    options: tuple[Field, ...] = ()
+    refresh_seconds: int = 30
+    #: Metric names this widget records for sparklines.
+    metrics: tuple[str, ...] = ()
+    #: True for widgets that need no server refresh: clocks, notes, bookmarks,
+    #: embedded pages and app tiles draw themselves from their options.
+    client_only: bool = False
+    #: The pieces of itself this widget can be told to leave out, as
+    #: ``(key, label)``. One tick box per entry appears in the widget settings
+    #: by itself, so an adapter declares the list and nothing else.
+    #:
+    #: ⚠️ All of them start ticked. A card that arrives empty and has to be
+    #: filled in leaves people guessing what it could show; a card that shows
+    #: everything and lets you take pieces away does not.
+    #:
+    #: A key names either a row (a ``secondary`` entry tagged ``part``) or a
+    #: field inside a list item (``cpu``, ``subtitle``, ``value``). Both shapes
+    #: occur, and ``keep_parts`` handles both.
+    parts: tuple[tuple[str, str], ...] = ()
+    #: When the tick boxes made from ``parts`` are worth showing at all.
+    parts_only_when: tuple[str, str] | None = None
+    #: True when this card's fetch can hand out slices that form a whole.
+    #:
+    #: ⚠️ Declared, never guessed. A ring says "these are the parts of one
+    #: thing", and most cards carry numbers that are not that: Pi-hole's card
+    #: shows queries, blocked and clients, and a ring of those three draws a
+    #: whole nobody has. So the arithmetic stays in the fetch, which is the
+    #: only place that knows what the whole is, and this flag only decides
+    #: whether the choice appears at all.
+    ring: bool = False
+    #: Whether a list can be drawn as bars. Declared, like the ring: the
+    #: drawing needs rows that carry numbers, and ``as_bars`` refuses it for
+    #: rows of text.
+    #:
+    #: ⚠️ It used to be offered to every list. Counted on 22.09.2026: 14 of
+    #: 157 list cards could draw it, and on the other 143 the switch "Rows /
+    #: Bars" changed nothing, which is how it was reported, on a list of
+    #: GitHub issues whose values are "1 h". The guard
+    #: ``test_bars_are_offered_where_they_can_be_drawn`` holds both directions.
+    bars: bool = False
+    #: Whether a pair of metrics named like in and out (``down`` and ``up``)
+    #: really is traffic. False where the pair counts things: Gatus's ``up`` and
+    #: ``down`` are endpoints, and a mirror of those would be nonsense.
+    inout: bool = True
+
+    def __post_init__(self) -> None:
+        """Never smaller than the drawing can bear.
+
+        An adapter may ask for more than the floor when its own card needs it;
+        it cannot ask for less, because the floor is about the renderer and
+        the renderer is not the adapter's to know.
+        """
+        floor = RENDERER_MIN.get(self.renderer, DEFAULT_MIN)
+        raised = (max(self.min_size[0], floor[0]), max(self.min_size[1], floor[1]))
+        if raised != tuple(self.min_size):
+            object.__setattr__(self, "min_size", raised)
+        # A default below the floor would be a card that opens broken.
+        grown = (max(self.default_size[0], raised[0]), max(self.default_size[1], raised[1]))
+        if grown != tuple(self.default_size):
+            object.__setattr__(self, "default_size", grown)
+        # The tick boxes are made from ``parts``, not written out by hand.
+        # Thirty adapters writing the same list is twenty-nine chances to
+        # write it differently and one to forget it.
+        # ⚠️ Every list card can be told which rows to show. One rule
+        # here rather than a field written into thirty adapters, twenty-nine
+        # of which would word it differently.
+        if self.renderer == "list" and not any(field.name == ITEM_PICKER for field in self.options):
+            object.__setattr__(self, "options", (*self.options, item_picker_field()))
+        # The same argument as the tick boxes above, for the drawing itself:
+        # a list can be drawn as bars, and a card that says what its slices
+        # are can be drawn as a ring. Written here once rather than into the
+        # eighty list cards, which is eighty chances to word it differently.
+        extra: tuple[tuple[str, str], ...] = ()
+        # ⚠️ A card that is a dial by birth can be the plain number too (issue
+        # #44). Not under "value": on these cards that is the dial, and every
+        # board saved before would switch drawing overnight.
+        if self.renderer == "gauge":
+            extra += ((PLAIN_NUMBER_VIEW, "The number"),)
+        if self.renderer == "list" and self.bars:
+            extra += (("bars", "Bars"),)
+        if self.ring:
+            extra += (("ring", "A ring"),)
+        # ⚠️ Every card whose big number is a measured number can be drawn as a
+        # dial, a row of LEDs or seven segments (issue #39). The drawing is the
+        # screen's business, not the adapter's: one rule here rather than a
+        # field in each of the 170-odd number cards, most of which would
+        # simply never have been given one.
+        numbers = self.renderer in NUMBER_RENDERERS and bool(self.metrics) and not self.client_only
+        if numbers:
+            if self.renderer != "gauge":
+                extra += (("gauge", "A dial"),)
+            extra += (("meter", "LED bars"), ("segments", "Seven segments"))
+        # A history of what the card records, on one scale. A card that
+        # records two things gets both lines, which side by side on separate
+        # cards had separate scales. A number card that records one thing gets
+        # its line large, with the reading, the lowest and the highest above
+        # it: the issue asked for the same choices on every number.
+        chart = self.renderer != "chart" and not self.client_only and (len(self.metrics) >= 2 or numbers)
+        if chart:
+            extra += (("chart", "A chart"),)
+        # A line in and a line out, mirrored on one axis: what a router or a
+        # download client is about, in one picture rather than two lines that
+        # cross because they live on scales a hundred times apart.
+        if self.inout and inout_pair(self.metrics) and not self.client_only:
+            extra += (("inout", "In and out, mirrored"),)
+        # Covers can run past as a band, slowly, one row across the card: what
+        # a wall shows best, and what nobody has to scroll.
+        if self.renderer == "posters":
+            extra += (("band", "A band that moves past"),)
+        # Whether the adapter already knew what a full dial is: it offered one
+        # itself, either because its number is a share or with a ceiling field.
+        own_dial = self.renderer == "gauge" or any(
+            field.name == "view" and "gauge" in {value for value, _ in field.options} for field in self.options
+        )
+        if extra:
+            object.__setattr__(self, "options", offer_views(self.options, self.renderer, extra))
+        if numbers:
+            object.__setattr__(self, "options", tuple(self.options) + drawing_fields(self.options, own_dial))
+        if chart and not any(field.name == "chart_hours" for field in self.options):
+            object.__setattr__(self, "options", (*self.options, chart_hours_field()))
+        if self.parts:
+            existing = {field.name for field in self.options}
+            made = tuple(
+                Field(part_option(key), label, type="bool", default=True, only_when=self.parts_only_when)
+                for key, label in self.parts
+                if part_option(key) not in existing
+            )
+            object.__setattr__(self, "options", tuple(self.options) + made)
+
+    def to_dict(self, adapter_kind: str) -> dict[str, Any]:
+        return {
+            "kind": f"{adapter_kind}.{self.kind}",
+            "label": self.label,
+            "description": self.description,
+            "renderer": self.renderer,
+            "default_size": list(self.default_size),
+            "min_size": list(self.min_size),
+            "options": [f.to_dict() for f in self.options],
+            "refresh_seconds": self.refresh_seconds,
+            "metrics": list(self.metrics),
+            "client_only": self.client_only,
+        }
+
+
+def saveable(path: str, name: str, size: float | None = None) -> dict[str, Any]:
+    """A file a row offers to save, put on the row as ``file``.
+
+    ⚠️ The path is an allowlist entry, not a parameter. Whoever may look at
+    the board may ask the server for a file the card named, and for nothing
+    else: the download address checks the path against the rows the card last
+    delivered, the way an action is checked against what it last offered. Left
+    open, it would be "fetch any path from this service with the server's
+    credentials", handed to every kiosk display in the house.
+    """
+    return {"path": path, "name": name, **({"size": float(size)} if size else {})}
+
+
+class Choice(BaseModel):
+    """One entry of a pick list a card offers with an action."""
+
+    value: str
+    #: A custom card hands over the author's text in every language it was written in (``{"en": ..., "de": ...}``).
+    label: str | dict[str, str]
+
+
+class Ask(BaseModel):
+    """A blank in an action, filled in by whoever presses the button.
+
+    ⚠️ The third case, and the one the guard of 0.2.0 was written against. An
+    action reaches the adapter only because the card put it in its last answer
+    with exactly those parameters, and a blank has no fixed value to compare.
+    The card therefore says here which parameter is blank and what may go in
+    it: everything else about the action still has to match what was offered,
+    and a value that does not fit this declaration never reaches the adapter.
+
+    ⚠️ **A pick list is the ordinary case, free text the exception.** It was
+    the other way round for one release, and that was wrong: with ``choice``
+    the card hands the permitted values over in its own answer, so the guard
+    can check the pressed value against them exactly as it checks a fixed
+    parameter. ``text`` and ``url`` are what is left when nobody can say in
+    advance what the value will be, and only then is a rule needed instead of
+    a list.
+
+    That is also why an action may carry several. The first version allowed
+    one, on the grounds that two blanks would be a form; that reasoning holds
+    for free text and not for lists. Approving a request in Nexview needs two
+    at once, a target folder and a quality profile, and one without the other
+    is not a smaller question but an unanswerable one.
+    """
+
+    #: The parameter the chosen or typed value is passed as.
+    name: str
+    #: Text, or the texts of a custom card's author per language.
+    label: str | dict[str, str]
+    #: ``choice`` picks from ``options``; ``url`` is checked the way a
+    #: member-supplied address is checked everywhere else in nexdeck: http or
+    #: https, a host, and nothing that only answers to the server itself.
+    #: ``number`` takes a number inside ``min`` and ``max`` on the grid of
+    #: ``step`` (a button of a custom card, KARTEN-8 AC-4).
+    kind: Literal["text", "url", "choice", "number"] = "text"
+    #: For ``choice``: what may be picked. Delivered with the card's answer,
+    #: which is what lets the guard check the pressed value against it.
+    options: list[Choice] = PydanticField(default_factory=list)
+    placeholder: str = ""
+    max_length: int = 400
+    #: For ``number``: the smallest and the largest value, and the steps from
+    #: ``min`` (or from 0). A whole step takes whole numbers only.
+    min: float | None = None
+    max: float | None = None
+    step: float | None = None
+
+    @model_serializer(mode="wrap")
+    def _without_an_empty_range(self, handler: Any) -> Any:
+        """The three fields of a number only where they are set: a blank of the built-in cards looks as it always did."""
+        data = handler(self)
+        if isinstance(data, dict):
+            for name in ("min", "max", "step"):
+                if data.get(name, 0) is None:
+                    del data[name]
+        return data
+
+
+#: A number as a field of a form sends it: digits, a point, a sign and an exponent, nothing else.
+_NUMBER_TEXT = re.compile(r"^[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?$")
+
+
+def _number_in(ask: Ask, value: Any) -> int | float:
+    """A filled-in number, checked against the type, the range and the steps of its blank (KARTEN-8 EC-9).
+
+    ⚠️ ``True`` is a number to Python and never one here, and neither is a
+    list, ``NaN`` or infinity. Text is taken only when it is a plain number:
+    a browser's number field may send ``"12"``.
+    """
+    if isinstance(value, str) and _NUMBER_TEXT.match(value.strip()):
+        value = float(value.strip())
+    if isinstance(value, bool) or not isinstance(value, int | float) or not math.isfinite(value):
+        raise AdapterError("This needs a number.", code="bad_value")
+    if (ask.min is not None and value < ask.min) or (ask.max is not None and value > ask.max):
+        low = "" if ask.min is None else f"{ask.min:g}"
+        high = "" if ask.max is None else f"{ask.max:g}"
+        raise AdapterError(f"That is outside what this field takes ({low} to {high}).", code="bad_value")
+    if ask.step is not None and ask.step > 0:
+        steps = (value - (ask.min or 0)) / ask.step
+        if abs(steps - round(steps)) > 1e-9:
+            raise AdapterError(f"That is not a step of {ask.step:g}.", code="bad_value")
+    whole = ask.step is not None and float(ask.step).is_integer()
+    if whole or float(value).is_integer():
+        if not float(value).is_integer():
+            raise AdapterError("This needs a whole number.", code="bad_value")
+        return int(value)
+    return float(value)
+
+
+def fill_in(ask: Ask, value: Any) -> Any:
+    """What the filled-in value must look like before an adapter sees it.
+
+    Refuses rather than trims, apart from surrounding blanks: a silently
+    shortened address is a download of something else. Text for every kind but
+    ``number``, which gives a number.
+    """
+    if ask.kind == "number":
+        return _number_in(ask, value)
+    if not isinstance(value, str):
+        raise AdapterError("This action needs a value.", code="bad_value")
+    text = value.strip()
+    if not text:
+        raise AdapterError("This action needs a value.", code="bad_value")
+    if ask.kind == "choice":
+        # ⚠️ Against the list the card handed over with the action, not
+        # against a list fetched now. What was on screen is what may be
+        # pressed, which is the same rule the fixed parameters follow.
+        if text not in {one.value for one in ask.options}:
+            raise AdapterError("That is not one of the values this card offered.", code="bad_value")
+        return text
+    if len(text) > ask.max_length:
+        raise AdapterError(
+            f"That is longer than the {ask.max_length} characters this field takes.", code="bad_value")
+    if any(ord(char) < 32 or ord(char) == 127 for char in text):
+        raise AdapterError("That contains characters a field like this never has.", code="bad_value")
+    if ask.kind == "url":
+        if "://" not in text:
+            raise AdapterError("That is not an address: it starts with http:// or https://.", code="bad_value")
+        guard_member_target(text)
+    return text
+
+
+class Action(BaseModel):
+    id: str
+    #: Text, or the texts of a custom card's author per language, which the browser picks from like every other text of such a card.
+    label: str | dict[str, str]
+    icon: str = ""
+    confirm: bool = False
+    danger: bool = False
+    params: dict[str, Any] = PydanticField(default_factory=dict)
+    #: The parameters whoever presses this button fills in themselves.
+    asks: list[Ask] = PydanticField(default_factory=list)
+
+
+@dataclass(frozen=True)
+class Deed:
+    """One action a card of its own may be pointed at.
+
+    ⚠️ An allowlist, and deliberately short. Every other action in nexdeck is
+    reachable only because the card that offers it put it in its last answer,
+    which is the guard from 0.2.0; a button carries no such answer, so what a
+    button may reach is written down here instead. An adapter that declares
+    nothing can be looked at from a button and not touched.
+    """
+
+    #: The widget kind whose ``action`` handles it.
+    widget_kind: str
+    id: str
+    label: str
+    #: The field whose ``choices`` name what it acts on, and the parameter it
+    #: is passed as. Empty when the action needs no target.
+    target_field: str = ""
+    #: What to call that target on screen, in the adapter's own word.
+    target_label: str = "Target"
+    icon: str = "zap"
+
+
+class WidgetData(BaseModel):
+    """What every widget fetch returns."""
+
+    status: Status = "ok"
+    #: ``{"label": str, "value": number|str, "unit": str, "format": str}``
+    primary: dict[str, Any] | None = None
+    secondary: list[dict[str, Any]] = PydanticField(default_factory=list)
+    items: list[dict[str, Any]] = PydanticField(default_factory=list)
+    actions: list[Action] = PydanticField(default_factory=list)
+    #: Numeric samples recorded for history and sparklines.
+    metrics: dict[str, float] = PydanticField(default_factory=dict)
+    link: str | None = None
+    meta: dict[str, Any] = PydanticField(default_factory=dict)
+    error: str | None = None
+    updated_at: float = PydanticField(default_factory=time.time)
+    #: Since when the card is yellow or red, when that is known (filled in by the collector).
+    since: float | None = None
+    #: When a volume is full, a number reaches its red, a backup gets slower (roadmap M4, ``services/forecast.py``).
+    forecast: dict[str, Any] | None = None
+    #: What this card's service hangs on that is down right now (roadmap M5, ``services/dependencies.py``).
+    cause: str | None = None
+
+
+class Detected(BaseModel):
+    """Something an adapter noticed between two fetches, worth telling about.
+
+    ⚠️ Only what the adapter *knows*, never what it guesses. "A download
+    finished" is true when an item that was almost done is gone; "a download
+    was removed" is what the same disappearance means at ten per cent, and
+    saying the first about the second is worse than saying nothing.
+    """
+
+    event: str
+    title: str
+    body: str = ""
+    level: Status = "ok"
+    #: Two of the same thing inside this many seconds count as one. A card
+    #: that refreshes every thirty seconds must not send the same line twice.
+    quiet_seconds: float = 900.0
+    #: What makes this one distinct from the next. Defaults to event + title.
+    key: str = ""
+
+    def dedupe_key(self) -> str:
+        return self.key or f"{self.event}:{self.title}"
+
+
+# ---------------------------------------------------------------------------
+# Which pieces of a card are shown
+# ---------------------------------------------------------------------------
+
+
+#: What may stand in a single segment of a path we build ourselves.
+_PATH_SEGMENT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$")
+
+
+def path_segment(value: Any, what: str) -> str:
+    """A value on its way into an address, or an error.
+
+    ⚠️ httpx normalises a path before it sends it, and a question mark ends it.
+    Measured with the pinned 0.28.1: ``/containers/../volumes/prune?x=/start``
+    goes out as ``/volumes/prune``. Anything that reaches an engine, a
+    hypervisor or a management API through a path we assemble has to be a
+    single segment and nothing else.
+
+    The name of a container comes from the foreign service, not from us, so
+    this is not only about what a caller sends: a container called ``..`` would
+    be offered by the card like any other.
+    """
+    text = str(value or "")
+    if not _PATH_SEGMENT.match(text):
+        raise AdapterError(f"{what} is not a name this can be used with.", code="bad_param")
+    return text
+
+
+def part_option(key: str) -> str:
+    """The option name behind a part. One place, so nobody spells it twice."""
+    return f"show_{key}"
+
+
+def part_on(options: dict[str, Any], key: str) -> bool:
+    """Is this piece switched on? Missing means yes."""
+    return options.get(part_option(key)) is not False
+
+
+def join_parts(options: dict[str, Any], *pieces: tuple[str, Any]) -> str:
+    """One line built from the pieces that are switched on.
+
+    For a card that writes several facts into one subtitle. Without this the
+    adapter would have to test each tick box by hand, and a line assembled by
+    hand is a line that ends up with a stray separator in it.
+    """
+    return " · ".join(str(value) for key, value in pieces if value and part_on(options, key))
+
+
+#: Every list card offers it, so an adapter does not have to think about it.
+ITEM_PICKER = "only_items"
+
+
+def item_picker_field() -> Field:
+    return Field(
+        ITEM_PICKER, "Entries", type="items",
+        help="Nothing picked means all of them, so a new entry appears by itself.",
+    )
+
+
+#: Where the settings sheet finds every row, including the hidden ones.
+ALL_ITEMS = "all_items"
+
+
+def keep_items(data: WidgetData, options: dict[str, Any], *, remember_all: bool = False) -> WidgetData:
+    """Keep only the rows that were picked.
+
+    ⚠️ An empty list means all of them. The rows come from the service, so
+    a new disk or a new container turns up on its own; a picker that stored
+    "these five" would quietly hide the sixth, which is the one worth seeing.
+
+    Matched by title, not by id. A container keeps its name and gets a new id
+    every time it is recreated, and the title is what the person ticked.
+    """
+    if remember_all and ALL_ITEMS not in (data.meta or {}):
+        # ⚠️ Written down before anything is dropped, and only for the
+        # settings sheet. The tick boxes are made from the rows the card
+        # shows, so switching one off took its own box away with it and there
+        # was no way back. The boards do not get this: it is a second copy of
+        # every title on every refresh, for a question only the sheet asks.
+        #
+        # ⚠️ And never over one that is already there. An adapter that filters
+        # its own rows before this runs, because it needs them narrowed before
+        # it can draw, has already written down what it saw first, and by here
+        # that is more than is left.
+        data.meta = {**(data.meta or {}), ALL_ITEMS: [str(item.get("title") or "") for item in data.items]}
+    wanted = options.get(ITEM_PICKER)
+    if not isinstance(wanted, list) or not wanted:
+        return data
+    keep = {str(one) for one in wanted}
+    data.items = [item for item in data.items if str(item.get("title") or "") in keep]
+    return data
+
+
+def keep_parts(data: WidgetData, parts: tuple[tuple[str, str], ...], options: dict[str, Any]) -> WidgetData:
+    """Take out the pieces this card was told to leave out.
+
+    Applied once by the collector, so an adapter declares its parts and stops
+    thinking about them.
+
+    ⚠️ The metrics are untouched. What a card draws and what it records
+    are different questions, and a graph with a hole in it because somebody
+    hid a row for a week is not what anybody meant by hiding a row.
+    """
+    off = {key for key, _label in parts if not part_on(options, key)}
+    if not off:
+        return data
+
+    data.secondary = [row for row in data.secondary if str(row.get("part") or "") not in off]
+    if data.primary and str(data.primary.get("part") or "") in off:
+        # ⚠️ A stats card whose first row is gone must not go blank: the
+        # next row moves up. Dropping the primary and leaving the rest would
+        # look like the service stopped answering.
+        data.primary = data.secondary.pop(0) if data.secondary else None
+
+    for item in data.items:
+        for key in off:
+            item.pop(key, None)
+    return data
+
+
+#: The two options a card needs to be able to draw itself as a dial.
+#:
+#: ⚠️ A dial without a maximum is a lie: it claims a share of something. A
+#: card that measures megabytes per second has no ceiling of its own, so the
+#: operator names one, and until they do the card stays a number.
+def gauge_fields(what: str, placeholder: str = "") -> tuple[Field, ...]:
+    return (
+        Field("view", "View", type="select", default="value",
+              options=(("value", "The number"), ("gauge", "A dial")),
+              help="A dial needs to know what counts as full."),
+        Field("gauge_max", "Full at", type="number", placeholder=placeholder,
+              help=f"{what} Leave empty and the card stays a number.",
+              only_when=("view", "|".join(DIAL_VIEWS))),
+    )
+
+
+#: The stretches a chart can show. A day comes from the minute rows, a week
+#: and a month from the hour rows, a year from the day rows (roadmap M4). This
+#: is where the chart starts; the buttons on the card switch it for the viewer.
+CHART_HOURS = (("1", "The last hour"), ("6", "The last 6 hours"), ("24", "The last 24 hours"),
+               ("168", "The last 7 days"), ("720", "The last 30 days"), ("8760", "The last year"))
+
+
+def chart_hours_field() -> Field:
+    return Field("chart_hours", "Chart shows", type="select", default="24", options=CHART_HOURS,
+                 only_when=("view", "chart"))
+
+
+def drawing_fields(options: tuple[Field, ...], own_dial: bool) -> tuple[Field, ...]:
+    """The settings the dial, the LEDs and the seven segments need (issue #39).
+
+    Each appears only under the view it belongs to: an option that does
+    nothing must not be on screen.
+
+    ⚠️ "Full at" only where the adapter did not know already. A card that
+    offered its own dial either measures a share, where full is 100 by
+    arithmetic, or brought the field along with its own words for what full
+    means on that service.
+    """
+    have = {field.name for field in options}
+    made: list[Field] = []
+    if not own_dial and "gauge_max" not in have:
+        made.append(Field("gauge_max", "Full at", type="number",
+                          help="What counts as full, in the unit of the number. Not needed for a percentage. Leave empty and the card stays a number.",
+                          only_when=("view", "|".join(DIAL_VIEWS))))
+    made.append(Field("gauge_min", "Empty at", type="number",
+                      help="Where the dial and the LEDs start, in the unit of the number. Empty means 0.",
+                      only_when=("view", "|".join(DIAL_VIEWS))))
+    made.append(Field("meter_direction", "LEDs run", type="select", default="across",
+                      options=(("across", "Across"), ("upright", "Upright")),
+                      only_when=("view", "meter")))
+    made.append(Field("level_warn", "Yellow from", type="number",
+                      help="In the unit of the number. It colours the dial, the LEDs, the digits and a tile of key figures. Empty leaves the colour to the card.",
+                      only_when=("view", "|".join(SINGLE_NUMBER_VIEWS))))
+    made.append(Field("level_bad", "Red from", type="number",
+                      help="Below Yellow from means low numbers are the bad ones, as with free space.",
+                      only_when=("view", "|".join(SINGLE_NUMBER_VIEWS))))
+    return tuple(field for field in made if field.name not in have)
+
+
+def gauge_view_field() -> Field:
+    """For a card whose number is already a share of something."""
+    return Field("view", "View", type="select", default="value",
+                 options=(("value", "The number"), ("gauge", "A dial")))
+
+
+def offer_views(options: tuple[Field, ...], renderer: str,
+                extra: tuple[tuple[str, str], ...]) -> tuple[Field, ...]:
+    """Add drawings to a card's View field, making the field if it has none.
+
+    ⚠️ One option name for every drawing, because ``as_gauge`` has read
+    ``view`` since the dial existed. A second name would mean two cards on the
+    same board answering the same question differently, and the settings sheet
+    showing both.
+    """
+    # What the card already is, named as the operator sees it. "The number"
+    # under a card that draws a dial would be a third thing on a list of two.
+    own = ("value", {"list": "Rows", "gauge": "A dial", "stats": "The rows", "posters": "Covers in a grid"}.get(renderer, "The number"))
+    for index, one in enumerate(options):
+        if one.name != "view":
+            continue
+        known = {value for value, _ in one.options}
+        added = tuple(pair for pair in extra if pair[0] not in known)
+        if not added:
+            return options
+        grown = replace(one, options=(*one.options, *added))
+        return (*options[:index], grown, *options[index + 1:])
+    return (*options, Field("view", "View", type="select", default="value",
+                            options=(own, *extra)))
+
+
+def gauge_pick_field(parts: tuple[tuple[str, str], ...]) -> Field:
+    """Which of several rows the needle follows.
+
+    ⚠️ A dial shows one number and these cards carry four. Taking the
+    first row silently would mean the dial changes meaning the day somebody
+    hides a row, and nobody would connect the two.
+    """
+    return Field(
+        "gauge_part", "Dial shows", type="select", default=parts[0][0],
+        options=tuple(parts),
+        only_when=("view", "|".join(SINGLE_NUMBER_VIEWS)),
+    )
+
+
+def single_number_view(options: dict[str, Any]) -> bool:
+    """Whether the card is asked to show one number: as a dial, LEDs or digits."""
+    return str(options.get("view") or "value") in SINGLE_NUMBER_VIEWS
+
+
+def pick_gauge_row(data: WidgetData, options: dict[str, Any]) -> WidgetData:
+    """Move the chosen row to the front, so the dial, the LEDs or the digits draw that one."""
+    wanted = str(options.get("gauge_part") or "").strip()
+    if not wanted or not single_number_view(options):
+        return data
+    if str((data.primary or {}).get("part") or "") == wanted:
+        return data
+    for index, row in enumerate(data.secondary):
+        if str(row.get("part") or "") == wanted:
+            data.secondary = [*data.secondary[:index], *data.secondary[index + 1:]]
+            if data.primary:
+                data.secondary.insert(0, data.primary)
+            data.primary = row
+            return data
+    return data
+
+
+def as_gauge(data: WidgetData, options: dict[str, Any], maximum: float | None = None) -> WidgetData:
+    """Turn a measured number into a share of something, if asked and possible.
+
+    Returns the card unchanged when the view was not asked for, or when there
+    is no ceiling to measure against. Silently drawing an empty dial would be
+    worse than drawing the number that was asked for.
+
+    The same share draws the dial and the row of LEDs: an adapter that knows
+    its own ceiling (a line's speed, a volume's size) passes it here once, and
+    both views have it.
+    """
+    view = str(options.get("view") or "value")
+    if view not in DIAL_VIEWS:
+        return data
+    # Applied once, centrally, by the collector. An adapter that also calls it
+    # must not turn its own percentage into a percentage of a percentage.
+    if (data.meta or {}).get("renderer") in DIAL_VIEWS:
+        return data
+    value = (data.primary or {}).get("value")
+    ceiling = maximum
+    #: Whether anybody actually named a ceiling. A card that measures a
+    #: percentage has one by arithmetic, and "35% of 100%" is a sentence about
+    #: nothing, so that kind is not written down.
+    named = ceiling is not None
+    if ceiling is None and str((data.primary or {}).get("unit") or "") == "%":
+        # Already a share of something; the card said so with its unit.
+        ceiling = 100.0
+    if ceiling is None:
+        try:
+            ceiling = float(options.get("gauge_max") or 0) or None
+        except (TypeError, ValueError):
+            ceiling = None
+    # Where the dial starts: 0 unless somebody named another floor, such as 15 °C
+    # for a room that is never colder.
+    floor = 0.0
+    floor_named = str(options.get("gauge_min") or "").strip() != ""
+    if floor_named:
+        try:
+            floor = float(options["gauge_min"])
+        except (TypeError, ValueError):
+            floor, floor_named = 0.0, False
+    if ceiling is None or ceiling <= floor or not isinstance(value, (int, float)):
+        return data
+    named = named or bool(str(options.get("gauge_max") or "").strip())
+    span = ceiling - floor
+    share = max(0.0, min(100.0, (float(value) - floor) / span * 100))
+    # ⚠️ The number itself stays where it was. A dial that replaces
+    # "38 MB/s" with "42%" answers a question nobody asked: the share is how
+    # far round the needle goes, not what the card is for.
+    dial: dict[str, Any] = {"share": round(share, 1)}
+    if named:
+        dial["max"] = ceiling
+    if floor_named:
+        dial["min"] = floor
+        # "of 80" alone would hide where it starts; the frontend says "15 to 80".
+        dial.setdefault("max", ceiling)
+    meta: dict[str, Any] = {**(data.meta or {}), "renderer": view, "gauge": dial}
+    if view == "meter":
+        # The coloured stretches of the row: where yellow and red begin, as
+        # shares of the same ceiling the LEDs are lit against.
+        warn, bad = level_lines(options)
+        zones = {name: round(max(0.0, min(100.0, (line - floor) / span * 100)), 1)
+                 for name, line in (("warn", warn), ("bad", bad)) if line is not None}
+        meta["meter"] = {"direction": "upright" if options.get("meter_direction") == "upright" else "across",
+                         "zones": zones, "low_is_bad": low_is_bad(options)}
+    data.meta = meta
+    return data
+
+
+def level_lines(options: dict[str, Any]) -> tuple[float | None, float | None]:
+    """Where yellow and where red begin, in the unit of the card's number."""
+    def line(name: str) -> float | None:
+        raw = options.get(name)
+        if raw in (None, ""):
+            return None
+        try:
+            return float(raw)
+        except (TypeError, ValueError):
+            return None
+    return line("level_warn"), line("level_bad")
+
+
+def low_is_bad(options: dict[str, Any]) -> bool:
+    """Red below yellow: a low number is the bad one, as with free space."""
+    warn, bad = level_lines(options)
+    return warn is not None and bad is not None and bad < warn
+
+
+def apply_level(data: WidgetData, options: dict[str, Any]) -> WidgetData:
+    """Colour one number by the lines the operator drew.
+
+    ⚠️ Only the colour of the drawing, under ``meta.level``. The card's own
+    status stays what the service said: the problems card, the notices and the
+    red glow of a card that went down all read ``status``, and a yellow line
+    somebody drew for the look of an LED row is not a fault of the service.
+
+    Worked out in every view, not only in the dial, the LEDs and the digits.
+    A tile of key figures draws the card's number whatever its view, and
+    until 24.10.2026 a tile took its colour from the lines only once the card
+    was set to seven segments, a view the tile never shows. The plain number
+    and the rows do not read ``meta.level``, so for them nothing changes.
+    """
+    value = (data.primary or {}).get("value")
+    warn, bad = level_lines(options)
+    if (warn is None and bad is None) or isinstance(value, bool) or not isinstance(value, (int, float)):
+        return data
+    reversed_lines = low_is_bad(options)
+
+    def past(line: float | None) -> bool:
+        if line is None:
+            return False
+        return value <= line if reversed_lines else value >= line
+
+    level = "bad" if past(bad) else "warn" if past(warn) else "ok"
+    data.meta = {**(data.meta or {}), "level": level}
+    return data
+
+
+def as_segments(data: WidgetData, options: dict[str, Any]) -> WidgetData:
+    """Draw the number as seven-segment digits, when asked and when it is a number.
+
+    A word stays a word: "online" has no digits, and the card falls back to
+    drawing it as it always did.
+    """
+    if str(options.get("view") or "value") != "segments":
+        return data
+    value = (data.primary or {}).get("value")
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return data
+    data.meta = {**(data.meta or {}), "renderer": "segments"}
+    return data
+
+
+def as_number(data: WidgetData, options: dict[str, Any]) -> WidgetData:
+    """Draw a dial card as its number, with the rows under it, when asked."""
+    if str(options.get("view") or "value") != PLAIN_NUMBER_VIEW:
+        return data
+    data.meta = {**(data.meta or {}), "renderer": "value"}
+    return data
+
+
+def timeline(
+    *lines: tuple[str, str, list[tuple[float, float | None]]],
+    unit: str = "",
+    shape: str = "line",
+) -> dict[str, Any]:
+    """A history the card brings with it, rather than one nexdeck collected.
+
+    ⚠️ The renderer's own series stop after 24 hours, because that is how long
+    ``history.py`` keeps minute rows. A service that has kept months of its own
+    can hand them over instead, and this is the shape it hands them in: one
+    entry per line, each a list of ``(seconds since the epoch, value)``.
+
+    A point whose value is ``None`` is a gap and is drawn as one. That is the
+    same rule as everywhere else: a measurement that did not happen is not a
+    zero, and a line that dips to the floor over a failed run would be a
+    picture of an outage that never was.
+    """
+    return {
+        "shape": shape if shape in ("line", "bars") else "line",
+        "unit": unit,
+        "lines": [
+            {"key": key, "label": label,
+             "points": [[float(at), None if value is None else float(value)] for at, value in points]}
+            for key, label, points in lines
+            if points
+        ],
+    }
+
+
+def ring_of(*slices: tuple[str, Any]) -> list[dict[str, Any]]:
+    """The pieces of one whole, in the order they should be drawn.
+
+    ⚠️ A piece whose number is unknown is left out, not counted as nought.
+    ``percent`` and ``measured`` were taught that in 0.2.0 and a ring is the
+    same argument twice over: a missing slice makes every other slice bigger,
+    so the drawing would be wrong rather than incomplete.
+    """
+    return [
+        {"label": label, "value": float(value)}
+        for label, value in slices
+        if isinstance(value, (int, float)) and not isinstance(value, bool) and float(value) >= 0
+    ]
+
+
+def as_bars(data: WidgetData, options: dict[str, Any]) -> WidgetData:
+    """Draw a list's rows as bars, when the rows carry numbers to compare.
+
+    ⚠️ Refuses rather than draws nothing. Half the list cards carry a text
+    where the number would be ("2.5 s", "3 days ago"), and a bar chart of
+    those is a column of empty tracks that looks like the service stopped
+    answering. Such a card stays a list, and the operator sees why: the rows
+    are still there.
+    """
+    if str(options.get("view") or "value") != "bars":
+        return data
+    numbers = [
+        float(row["value"]) for row in data.items
+        if isinstance(row.get("value"), (int, float)) and not isinstance(row.get("value"), bool)
+    ]
+    # Two, because one bar is always full and says nothing about anything.
+    if len(numbers) < 2 or max(numbers) <= 0:
+        return data
+    data.meta = {**(data.meta or {}), "renderer": "bars"}
+    return data
+
+
+def as_chart(data: WidgetData, options: dict[str, Any]) -> WidgetData:
+    """Draw the card's own history instead of its number, when asked.
+
+    ⚠️ Refuses while the card measured nothing at all right now: a chart of no
+    line is an empty box. One line is drawn large, with the reading, the
+    lowest and the highest above it (issue #39); until 0.41.0 it was refused
+    as "the sparkline the card already had", which it is not.
+    """
+    if str(options.get("view") or "value") != "chart":
+        return data
+    if not data.metrics:
+        return data
+    hours = str(options.get("chart_hours") or "24")
+    data.meta = {**(data.meta or {}), "renderer": "chart",
+                 "chart_hours": int(hours) if hours in {value for value, _ in CHART_HOURS} else 24}
+    return data
+
+
+def as_band(data: WidgetData, options: dict[str, Any]) -> WidgetData:
+    """Covers as a moving band, when asked; the drawing stays the covers card."""
+    if str(options.get("view") or "value") != "band":
+        return data
+    data.meta = {**(data.meta or {}), "band": True}
+    return data
+
+
+def as_inout(data: WidgetData, options: dict[str, Any]) -> WidgetData:
+    """Draw in and out mirrored, when asked and when the card measured both right now."""
+    if str(options.get("view") or "value") != "inout":
+        return data
+    pair = inout_pair(list(data.metrics or {}))
+    if pair is None:
+        return data
+    data.meta = {**(data.meta or {}), "renderer": "inout", "inout": list(pair)}
+    return data
+
+
+def as_ring(data: WidgetData, options: dict[str, Any]) -> WidgetData:
+    """Draw the slices the fetch worked out, when the card is asked to be one.
+
+    ⚠️ The slices are never taken from ``secondary``. Those rows are whatever
+    the card had room for, and adding them up gives a whole that does not
+    exist: Pi-hole's are queries, blocked and clients, and blocked is already
+    inside queries. Only the fetch knows the arithmetic, so only the fetch
+    writes ``meta["ring"]``; a card that has not written one stays what it is.
+    """
+    if str(options.get("view") or "value") != "ring":
+        return data
+    slices = [
+        piece for piece in ((data.meta or {}).get("ring") or [])
+        if isinstance(piece, dict)
+        and isinstance(piece.get("value"), (int, float))
+        and not isinstance(piece.get("value"), bool)
+        and float(piece["value"]) >= 0
+    ]
+    if len(slices) < 2 or sum(float(piece["value"]) for piece in slices) <= 0:
+        return data
+    data.meta = {**(data.meta or {}), "renderer": "ring", "ring": slices}
+    return data
+
+
+def shape_for_display(data: WidgetData, adapter: Adapter, widget_kind: str, options: dict[str, Any],
+                      *, for_settings: bool = False) -> WidgetData:
+    """Everything that happens to a card between the service and the screen.
+
+    ⚠️ One function, because there are two ways to a card: the collector
+    that refreshes it and the preview the settings sheet asks for. The passes
+    hung on the collector alone, so switching a piece off changed nothing in
+    the sheet until the page was reloaded, and building a card meant guessing
+    and pressing F5.
+    """
+    try:
+        widget = adapter.widget(widget_kind)
+    except KeyError:
+        return data
+    data = keep_parts(data, widget.parts, options)
+    data = keep_items(data, options, remember_all=for_settings)
+    data = pick_gauge_row(data, options)
+    data = as_bars(data, options)
+    data = as_ring(data, options)
+    data = as_chart(data, options)
+    data = as_inout(data, options)
+    data = as_band(data, options)
+    data = as_number(data, options)
+    data = as_segments(data, options)
+    data = as_gauge(data, options)
+    return apply_level(data, options)
+
+
+class AdapterError(Exception):
+    """A readable failure: what went wrong, and what the operator can do."""
+
+    def __init__(self, message: str, *, code: str = "adapter_error", hint: str = "") -> None:
+        super().__init__(message)
+        self.message = message
+        self.code = code
+        self.hint = hint
+
+
+class AuthFailed(AdapterError):
+    def __init__(self, message: str = "The service rejected the credentials.", *, status: int | None = None) -> None:
+        super().__init__(message, code="auth_failed", hint="Check the API key or the password.")
+        #: The HTTP status that was refused (401 or 403), when it is known.
+        self.status = status
+
+
+class Unreachable(AdapterError):
+    def __init__(self, message: str = "The service could not be reached.") -> None:
+        super().__init__(message, code="unreachable", hint="Check the URL and the network.")
+
+
+#: Addresses that answer only to the machine itself and hand out credentials.
+#: 169.254.169.254 is the metadata service of AWS, Google, Azure, Hetzner and
+#: DigitalOcean; fd00:ec2::254 is the same thing over IPv6. No card wants them,
+#: and a widget option is enough to point the server at one.
+FORBIDDEN_HOSTS = frozenset({
+    "169.254.169.254",
+    "metadata.google.internal",
+    "metadata.goog",
+    "fd00:ec2::254",
+    "[fd00:ec2::254]",
+})
+
+
+def _address(host: str) -> ipaddress.IPv4Address | ipaddress.IPv6Address | None:
+    try:
+        return ipaddress.ip_address(host.strip("[]"))
+    except ValueError:
+        return None
+
+
+def _is_link_local(host: str) -> bool:
+    """169.254.0.0/16 and fe80::/10: never a service, on any installation."""
+    parsed = _address(host)
+    return parsed is not None and parsed.is_link_local
+
+
+def _is_loopback(host: str) -> bool:
+    """127.0.0.0/8, ::1, and the names that mean loopback by definition.
+
+    ⚠️ Only literal addresses were read, so ``http://localhost:8000`` walked
+    through the member rule until 12.09.2026. ``localhost`` and every name
+    under it are loopback by RFC 6761 without asking any DNS, which keeps this
+    free of the lookup ``guard_outbound`` explains it cannot afford.
+    """
+    name = host.strip("[]").rstrip(".").lower()
+    if name == "localhost" or name.endswith(".localhost"):
+        return True
+    parsed = _address(host)
+    return parsed is not None and parsed.is_loopback
+
+
+def _barred_message(what: str) -> AdapterError:
+    return AdapterError(
+        f"{what} is not an address nexdeck calls.",
+        code="forbidden_host",
+        hint="Loopback and the link-local range are barred: the first is nexdeck itself and whatever else "
+             "listens beside it, the second hands out the host's credentials on every cloud. "
+             "NEXDECK_ALLOW_LOOPBACK_TARGETS=1 lifts it.",
+    )
+
+
+def guard_outbound(url: str) -> None:
+    """Refuse an address that is never a service of the house.
+
+    ⚠️ This used to compare the host against five spellings of the metadata
+    address and nothing else, so ``127.0.0.1`` walked straight through. A
+    notification channel takes an address from any member and reports the
+    answer back, which made that field a way of asking what else listens next
+    to the server.
+
+    ⚠️ What this does **not** do is look up what a name points at.
+    ``localtest.me`` resolves to 127.0.0.1 and gets through. Checking would
+    mean a second name lookup in front of every single request, on top of the
+    one the connection makes anyway. Measured on 07.09.2026: a name with a dot
+    that does not exist costs about 50 ms, a bare name like ``radarr`` costs
+    **2.7 s**, because Windows falls back to LLMNR and NetBIOS. A guard that
+    puts seconds in front of every card is worse than the hole it closes, and
+    the hole needs an attacker who already controls a DNS record.
+    """
+
+    split = urlsplit(url if "://" in url else f"http://{url}")
+    if split.scheme not in ("http", "https"):
+        raise AdapterError(
+            f"nexdeck speaks http and https, not {split.scheme or 'that'}.",
+            code="bad_scheme",
+            hint="A service address starts with http:// or https://.",
+        )
+    host = (split.hostname or "").lower()
+    if not host:
+        raise AdapterError("That address names no host.", code="bad_url")
+    if host.strip("[]") in {entry.strip("[]") for entry in FORBIDDEN_HOSTS}:
+        raise _barred_message("That address")
+    if _is_link_local(host):
+        raise _barred_message(host)
+
+
+def guard_member_target(url: str) -> None:
+    """The same, plus loopback, for an address a member typed in.
+
+    ⚠️ Loopback is barred here and nowhere else, and the difference is who put
+    the address there. An administrator pointing a connection at
+    ``http://127.0.0.1:7878`` is an ordinary Radarr on a host-network install,
+    and a test has said so since before this guard existed. A member typing
+    the same thing into a notification channel is asking the server what else
+    is listening beside it, and getting the answer back as an HTTP status.
+
+    ``NEXDECK_ALLOW_LOOPBACK_TARGETS=1`` lifts it for the operator who really
+    does run a notification service next to nexdeck.
+    """
+    from ..config import get_settings
+
+    guard_outbound(url)
+    if get_settings().allow_loopback_targets:
+        return
+    host = (urlsplit(url if "://" in url else f"http://{url}").hostname or "").lower()
+    if _is_loopback(host):
+        raise _barred_message(host)
+
+
+def _numeric_host(host: str) -> ipaddress.IPv4Address | ipaddress.IPv6Address | None:
+    """The address a host spells, however it spells it: ``127.1``, ``2130706433`` and ``0x7f000001`` are all 127.0.0.1.
+
+    ⚠️ The resolver of the system reads these forms (``inet_aton``), ``ipaddress`` does not. Reading only the dotted
+    quad let ``http://0.0.0.0/``, ``http://127.1/`` and ``http://2852039166/`` (the metadata address) through
+    (found in the review of KARTEN-2 and KARTEN-6, 25.10.2026).
+    """
+    text = host.strip("[]")
+    parsed = _address(text)
+    if parsed is not None:
+        return parsed
+    try:
+        return ipaddress.IPv4Address(socket.inet_aton(text))
+    except (OSError, ValueError):
+        return None
+
+
+def refuses_for_external(address: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
+    """True for every address a picture of somebody else's choosing must never be fetched from.
+
+    That is everything which is not a public address: loopback, private, link-local (the metadata service), the
+    unspecified address (``0.0.0.0`` reaches the machine itself on Linux), multicast, carrier-grade NAT and the rest.
+    The addresses of the administrator's own connections are not judged here; they may be private by design.
+    """
+    mapped = getattr(address, "ipv4_mapped", None)
+    if mapped is not None:
+        address = mapped
+    return not address.is_global or address.is_multicast or address.is_loopback or address.is_link_local or address.is_unspecified
+
+
+def guard_external_target(url: str) -> None:
+    """The strictest rule: for an address that came out of a card's data, not from the person who runs nexdeck."""
+    guard_outbound(url)
+    host = (urlsplit(url if "://" in url else f"http://{url}").hostname or "").lower()
+    name = host.rstrip(".")
+    if name == "localhost" or name.endswith(".localhost") or name.endswith(".internal") or name.endswith(".local"):
+        raise _barred_message(host)
+    numeric = _numeric_host(host)
+    if numeric is not None and refuses_for_external(numeric):
+        raise _barred_message(host)
+
+
+async def _external_guard_hook(request: Any) -> None:
+    guard_external_target(str(request.url))
+
+
+class _CheckedBackend(httpcore.AsyncNetworkBackend):
+    """Looks the name up itself, refuses the connection when any answer is not a public address, and connects to the address it checked.
+
+    ⚠️ Checking the name before the request and letting the connection look it up again is the gap of DNS rebinding,
+    and a name like ``127.0.0.1.nip.io`` passes any check of the spelling. This one lookup is both the check and the
+    address that is dialled, on every hop of a redirect.
+    """
+
+    def __init__(self) -> None:
+        self._inner = httpcore.AnyIOBackend()
+
+    async def connect_tcp(
+        self, host: str, port: int, timeout: float | None = None, local_address: str | None = None,
+        socket_options: Any = None,
+    ) -> httpcore.AsyncNetworkStream:
+        numeric = _numeric_host(host)
+        if numeric is not None:
+            found = [str(numeric)]
+        else:
+            infos = await asyncio.get_running_loop().getaddrinfo(host, port, type=socket.SOCK_STREAM)
+            found = list(dict.fromkeys(str(info[4][0]).split("%", 1)[0] for info in infos))
+        if not found:
+            raise httpcore.ConnectError(f"{host} has no address.")
+        for one in found:
+            parsed = _address(one)
+            if parsed is None or refuses_for_external(parsed):
+                raise _barred_message(host)
+        last: Exception | None = None
+        for one in found:
+            try:
+                return await self._inner.connect_tcp(one, port, timeout=timeout, local_address=local_address, socket_options=socket_options)
+            except httpcore.ConnectError as failure:
+                last = failure
+        raise last or httpcore.ConnectError(f"{host} did not answer.")
+
+    async def connect_unix_socket(self, path: str, timeout: float | None = None, socket_options: Any = None) -> httpcore.AsyncNetworkStream:
+        raise _barred_message(path)
+
+    async def sleep(self, seconds: float) -> None:
+        await self._inner.sleep(seconds)
+
+
+async def _guard_hook(request: Any) -> None:
+    """Every request a shared client makes, redirects included."""
+    guard_outbound(str(request.url))
+
+
+async def _member_guard_hook(request: Any) -> None:
+    """The same, with the member rule, for a client that follows an address a member typed."""
+    guard_member_target(str(request.url))
+
+
+#: What a request keeps when a redirect sends it somewhere credentials may not go.
+HARMLESS_HEADERS = frozenset({"host", "user-agent", "accept", "accept-encoding", "accept-language", "connection"})
+_DEFAULT_PORTS = {"http": 80, "https": 443}
+
+
+def same_place(start: httpx.URL, target: httpx.URL) -> bool:
+    """Whether a redirect stays where a connection's credentials may follow it.
+
+    Same host, and either the same scheme and port or plain http raised to
+    https on any port: UniFi sends http to https, a classic controller from
+    8080 to 8443, and a reverse proxy from 80 to 443. Another host, another
+    port on the same scheme, and https lowered to http are not.
+    """
+    if start.host.lower() != target.host.lower():
+        return False
+    if start.scheme == "http" and target.scheme == "https":
+        return True
+    return (start.scheme, start.port or _DEFAULT_PORTS.get(start.scheme)) == (
+        target.scheme, target.port or _DEFAULT_PORTS.get(target.scheme))
+
+
+class RedirectRefused(httpx.RequestError):
+    """A redirect that would have carried a request body to another place."""
+
+
+class _OutboundClient(httpx.AsyncClient):
+    """httpx's client, with nothing that opens a door carried to another place.
+
+    ⚠️ httpx drops ``Authorization`` on a redirect to another origin and
+    nothing else. ``X-Api-Key``, ``X-Plex-Token``, ``X-Emby-Token`` and every
+    other header a connection signs in with went along, so a service that was
+    compromised or set up wrong handed its key to any host it named in a
+    ``Location``. Found in the review of the custom cards, 25.10.2026.
+
+    Such a hop keeps only ``HARMLESS_HEADERS``, which takes cookies with it.
+    A redirect that keeps the method and the body (307, 308 after a POST) is
+    refused there instead: the body may be the password of a sign-in.
+    """
+
+    def _build_redirect_request(self, request: httpx.Request, response: httpx.Response) -> httpx.Request:
+        following = super()._build_redirect_request(request, response)
+        if same_place(request.url, following.url):
+            # httpx keeps it only from port 80 to 443; one rule for every header.
+            if "authorization" in request.headers:
+                following.headers["Authorization"] = request.headers["authorization"]
+            return following
+        if following.method not in ("GET", "HEAD"):
+            raise RedirectRefused(f"A {following.method} was redirected to {following.url.host}.", request=following)
+        for name in [name for name in following.headers if name not in HARMLESS_HEADERS]:
+            del following.headers[name]
+        return following
+
+
+def outbound_client(*, guard: bool = True, member: bool = False, external: bool = False, keep_cookies: bool = False, **kwargs: Any) -> httpx.AsyncClient:
+    """The only place an outbound client is built.
+
+    ⚠️ The guard hangs on the client, not on the call, because httpx runs a
+    request hook for every hop of a redirect as well. Checking only the address
+    somebody typed leaves the second one open, and a service that answers 302
+    decides where the third request goes. Measured with the pinned httpx: the
+    hook sees both hops and an error inside it ends the request.
+
+    ``member=True`` puts the member rule on every hop, loopback included. Where
+    a member typed the first address, a redirect from a server of their own
+    led on to 127.0.0.1: the address they typed was checked, the one it pointed
+    at was not. Found on 12.09.2026.
+
+    ``external=True`` is for an address that came out of the data of a card: public addresses only, checked as the
+    spelling of every hop and again as the address the connection really dials (a name that resolves to the inside is
+    refused too). It ignores the proxy variables of the environment, because a proxy would dial for it.
+
+    ``guard=False`` is for a client that does not speak to the network by name,
+    which today is the Docker socket and nothing else.
+
+    A redirect to another place goes on without credentials, see
+    ``_OutboundClient``.
+    """
+    if guard:
+        hooks = dict(kwargs.pop("event_hooks", None) or {})
+        hook = _external_guard_hook if external else _member_guard_hook if member else _guard_hook
+        hooks["request"] = [*hooks.get("request", []), hook]
+        kwargs["event_hooks"] = hooks
+    if external:
+        transport = httpx.AsyncHTTPTransport(verify=kwargs.pop("verify", True))
+        transport._pool._network_backend = _CheckedBackend()  # noqa: SLF001 - the one seam where the dialled address can be checked
+        kwargs["transport"] = transport
+    if not keep_cookies:
+        # ⚠️ No cookie jar unless a client asks for one. httpx keeps every
+        # Set-Cookie, and the collector shares one client across every
+        # connection, so a session cookie one connection's answer set went along
+        # with the next request to the same host, whatever credentials that one
+        # carried: on What's Up Docker a wrong password got in. A client built
+        # for one connection that signs in with a cookie passes keep_cookies.
+        from http.cookiejar import CookieJar, DefaultCookiePolicy
+
+        kwargs.setdefault("cookies", CookieJar(policy=DefaultCookiePolicy(allowed_domains=[])))
+    # The only place in the code that may build one of these directly, which is
+    # what the guard test in test_guards.py holds everyone else to.
+    return _OutboundClient(**kwargs)
+
+
+_member_clients: dict[bool, httpx.AsyncClient] = {}
+_external_client: httpx.AsyncClient | None = None
+
+
+def external_client() -> httpx.AsyncClient:
+    """The one client for pictures at addresses a card named (public addresses only, redirects followed and checked)."""
+    global _external_client
+    if _external_client is None or _external_client.is_closed:
+        _external_client = outbound_client(external=True, follow_redirects=True)
+    return _external_client
+
+
+def member_client(verify: bool = True) -> httpx.AsyncClient:
+    """One client per TLS mode for addresses a member typed, kept for the life of the process."""
+    client = _member_clients.get(verify)
+    if client is None or client.is_closed:
+        client = outbound_client(member=True, verify=verify, follow_redirects=True)
+        _member_clients[verify] = client
+    return client
+
+
+#: How many responses one integration may keep. Ten widgets on one service
+#: with a handful of addresses each stay well under it.
+MAX_CACHED_RESPONSES = 64
+CACHE_PREFIX = "resp:"
+
+
+_relaxed: httpx.AsyncClient | None = None
+
+
+def _relaxed_client() -> httpx.AsyncClient:
+    """One client for every call that was told to ignore TLS errors.
+
+    ⚠️ This used to be ``async with outbound_client(verify=False)`` per call,
+    so a service with a self-signed certificate paid a fresh TCP connection and
+    a fresh handshake for every single request a card made. The verifying path
+    has had a shared client from the start; this is the same thing for the
+    other half.
+    """
+    global _relaxed
+    if _relaxed is None or _relaxed.is_closed:
+        _relaxed = outbound_client(verify=False, follow_redirects=True)
+    return _relaxed
+
+
+async def close_relaxed_client() -> None:
+    global _relaxed
+    if _relaxed is not None and not _relaxed.is_closed:
+        await _relaxed.aclose()
+    _relaxed = None
+
+
+#: The largest answer a service may give a card.
+#:
+#: ⚠️ There was no ceiling. The whole body is read into memory and parsed, so a
+#: service that answers with a hundred megabytes of JSON, or an address that
+#: turns out to be a file server, took the process with it. Nothing a card
+#: reads is anywhere near this: the largest measured answer in this codebase is
+#: a Jellyfin library listing at a few megabytes.
+MAX_ANSWER_BYTES = 32 * 1024 * 1024
+
+
+def _refuse_a_giant_answer(url: str, response: httpx.Response) -> None:
+    size = len(response.content)
+    if size > MAX_ANSWER_BYTES:
+        raise AdapterError(
+            f"The service answered with {size // (1024 * 1024)} MB, which is more than a card reads.",
+            code="answer_too_large",
+            hint="Check that the address points at the service's API and not at a file.",
+        )
+
+
+async def read_at_most(client: httpx.AsyncClient, method: str, url: str, limit: int, **keywords: Any) -> httpx.Response:
+    """One request whose answer is read only up to ``limit`` bytes: streamed, and given up at the first byte beyond it.
+
+    ⚠️ ``client.request`` reads the whole body before anything can look at its size, so a path that answers with a log or a
+    range of a time series took that much memory, every ten seconds, before a limit was checked.
+    """
+    def too_large() -> AdapterError:
+        return AdapterError(
+            "Answer too large. The service answered with more than a custom card reads.",
+            code="answer_too_large",
+            hint=f"A card reads at most {limit // (1024 * 1024)} MB of one answer. Ask for less, or use a different path of the service."
+            if limit >= 1024 * 1024
+            else f"At most {limit // 1024} KB of this answer are read. Ask for less, or use a different path of the service.",
+        )
+
+    async with client.stream(method, url, **keywords) as response:
+        declared = response.headers.get("content-length", "")
+        if declared.isdigit() and int(declared) > limit:
+            raise too_large()
+        body = bytearray()
+        async for chunk in response.aiter_bytes():
+            body += chunk
+            if len(body) > limit:
+                raise too_large()
+        # The body is decoded already: the headers that describe the wire form would make httpx decode it a second time.
+        headers = [(name, value) for name, value in response.headers.multi_items()
+                   if name.lower() not in ("content-encoding", "content-length", "transfer-encoding")]
+        return httpx.Response(response.status_code, headers=headers, content=bytes(body), request=response.request)
+
+
+def _auth_fingerprint(auth: tuple[str, str] | httpx.Auth | None) -> str:
+    """Tell the answers kept for one sign-in from those kept for another, without keeping the secret.
+
+    ⚠️ ``auth=`` used to be left out of the key: two connections to one address with different accounts shared an
+    answer. A digest of the credentials, never the credentials. An auth object of a kind not known here gets its
+    identity, so that it shares nothing, and is at worst not remembered.
+    """
+    if auth is None:
+        return ""
+    if isinstance(auth, tuple):
+        parts: list[Any] = ["basic", *auth]
+    elif isinstance(auth, httpx.BasicAuth):
+        parts = ["basic", auth._auth_header]
+    elif isinstance(auth, httpx.DigestAuth):
+        parts = ["digest", auth._username, auth._password]
+    else:
+        parts = [type(auth).__name__, id(auth)]
+    return hashlib.sha256(json.dumps(parts, default=lambda value: value.decode("latin-1") if isinstance(value, bytes) else str(value)).encode()).hexdigest()
+
+
+class Context:
+    """What an adapter gets besides its configuration.
+
+    ``fetch_json`` caches GET responses for a few seconds per integration, so
+    ten widgets on the same Radarr cause one request, not ten.
+    """
+
+    def __init__(
+        self,
+        client: httpx.AsyncClient,
+        *,
+        integration_id: int | None = None,
+        widget_id: int | None = None,
+        cache: dict[str, Any] | None = None,
+        resolve_integration: Any = None,
+    ) -> None:
+        self.client = client
+        self.integration_id = integration_id
+        self.widget_id = widget_id
+        #: Per-integration memory for adapters (auth tickets, cookies, indexes).
+        self.cache: dict[str, Any] = cache if cache is not None else {}
+        #: ``async (integration_id) -> (adapter, config, Context)`` for widgets
+        #: that combine several integrations, such as the calendar.
+        self.resolve_integration = resolve_integration
+        #: Watches every request before it leaves, see :mod:`.rawread`; ``None`` for all but a custom card's capture.
+        self.tap: Any = None
+
+    def tapped(self, tap: Any) -> Context:
+        """The same connection (client, memory, sessions) with a watcher on its requests."""
+        other = Context(self.client, integration_id=self.integration_id, widget_id=self.widget_id,
+                        cache=self.cache, resolve_integration=self.resolve_integration)
+        other.tap = tap
+        return other
+
+    async def request(
+        self,
+        method: str,
+        url: str,
+        *,
+        headers: dict[str, str] | None = None,
+        params: dict[str, Any] | None = None,
+        json_body: Any = None,
+        data: Any = None,
+        content: bytes | None = None,
+        timeout: float = 15.0,
+        verify: bool = True,
+        auth: tuple[str, str] | httpx.Auth | None = None,
+        cache_seconds: float = 0,
+        auth_errors: bool = True,
+        member: bool = False,
+        follow_redirects: bool | None = None,
+        max_bytes: int | None = None,
+    ) -> httpx.Response:
+        """Fetch, with 401 and 403 turned into a readable refusal.
+
+        ``auth_errors=False`` hands those two back as ordinary answers. Some
+        services use 403 for something else entirely: GitHub uses it for the
+        hourly limit, and "the service rejected the credentials" is wrong and
+        unhelpful for a card that has no credentials at all.
+
+        ``member=True`` is for an address a member typed into a card. It goes
+        through a client with the member rule on every hop of a redirect, not
+        through the shared one that serves the administrator's connections.
+
+        ``follow_redirects`` overrides what the client does for this one request;
+        ``None`` leaves it to the client. A custom card asks with ``False``: httpx
+        drops ``Authorization`` when a redirect changes the host, but not ``X-Api-Key``.
+
+        ``max_bytes`` limits what is read: the answer is streamed and the request given up the moment it is larger (a
+        declared length is believed before a single byte is read). A custom card passes its 2 MB; without it the whole
+        answer is read, as it always was.
+        """
+        if self.tap is not None:
+            self.tap(method, url, headers, params, auth, data if data is not None else json_body)
+        if member:
+            guard_member_target(url)
+        else:
+            guard_outbound(url)
+        # Only when it was asked for, so the cache keys of every other request stay what they were.
+        redirects = {} if follow_redirects is None else {"follow_redirects": follow_redirects}
+        key = ""
+        if method.upper() == "GET" and cache_seconds > 0:
+            key = CACHE_PREFIX + hashlib.sha256(
+                json.dumps([url, params, headers, _auth_fingerprint(auth), *([follow_redirects] if redirects else [])], sort_keys=True, default=str).encode()
+            ).hexdigest()
+            hit = self.cache.get(key)
+            if hit and hit[0] > time.monotonic():
+                return hit[1]
+        try:
+            client = member_client(verify) if member else (self.client if verify else _relaxed_client())
+            if max_bytes is None:
+                response = await client.request(
+                    method, url, headers=headers, params=params, json=json_body,
+                    data=data, content=content, timeout=timeout, auth=auth, **redirects,
+                )
+            else:
+                response = await read_at_most(
+                    client, method, url, max_bytes, headers=headers, params=params, json=json_body,
+                    data=data, content=content, timeout=timeout, auth=auth, **redirects,
+                )
+        except httpx.TimeoutException as error:
+            raise Unreachable("The service did not answer in time.") from error
+        except RedirectRefused as error:
+            raise AdapterError(f"The service sent the request on to {error.request.url.host}.", code="redirect_refused",
+                               hint="nexdeck sends what it signs in with only to the address of the connection. "
+                                    "Check the URL; it is the address of the service itself.") from error
+        except httpx.HTTPError as error:
+            raise Unreachable(f"The service could not be reached: {error.__class__.__name__}.") from error
+        if auth_errors and response.status_code in (401, 403):
+            raise AuthFailed(status=response.status_code)
+        _refuse_a_giant_answer(url, response)
+        # ⚠️ Only an answer that worked is kept. A 401 or a 429 held for the seconds of the cache came back to the
+        # second try, the one made after signing in again, and the card stayed refused until it ran out.
+        if key and response.status_code < 400:
+            self._remember(key, time.monotonic() + cache_seconds, response)
+        return response
+
+    def forget_answers(self) -> None:
+        """Drop every remembered answer of this connection, after something changed at the service.
+
+        ⚠️ For writes a card makes itself. A playlist renamed a second ago must
+        not come back under its old name for the two minutes its list is kept.
+        """
+        for name in [key for key in self.cache if key.startswith(CACHE_PREFIX)]:
+            self.cache.pop(name, None)
+
+    def _remember(self, key: str, until: float, response: httpx.Response) -> None:
+        """Keep a response, and keep the cache from becoming the leak.
+
+        ⚠️ Nothing used to remove an entry. An expired one was skipped on read
+        and then sat there holding its whole body. Adapters whose address
+        carries a date or a timestamp made a new key every time, so the cache
+        only ever grew: a Plex history card wrote a few hundred megabytes a day
+        into a dict nobody could reach.
+        """
+        now = time.monotonic()
+        self.cache[key] = (until, response)
+        stale = [name for name, entry in self.cache.items()
+                 if name.startswith(CACHE_PREFIX) and isinstance(entry, tuple) and entry[0] <= now]
+        for name in stale:
+            self.cache.pop(name, None)
+        kept = [name for name in self.cache if name.startswith(CACHE_PREFIX)]
+        if len(kept) > MAX_CACHED_RESPONSES:
+            # Oldest expiry first; the newest entries are the ones in use.
+            for name in sorted(kept, key=lambda name: self.cache[name][0])[: len(kept) - MAX_CACHED_RESPONSES]:
+                self.cache.pop(name, None)
+
+    async def get_json(
+        self,
+        url: str,
+        *,
+        headers: dict[str, str] | None = None,
+        params: dict[str, Any] | None = None,
+        timeout: float = 15.0,
+        verify: bool = True,
+        auth: tuple[str, str] | None = None,
+        cache_seconds: float = 5,
+    ) -> Any:
+        response = await self.request(
+            "GET", url, headers=headers, params=params, timeout=timeout, verify=verify,
+            auth=auth, cache_seconds=cache_seconds,
+        )
+        if response.status_code >= 400:
+            raise AdapterError(
+                f"The service answered with HTTP {response.status_code}.",
+                code="http_error",
+                hint="Check the URL; the address may point at the wrong service.",
+            )
+        try:
+            return response.json()
+        except ValueError as error:
+            raise AdapterError(
+                "The service did not answer with JSON.",
+                code="not_json",
+                hint="The URL probably points at a login page or a reverse proxy.",
+            ) from error
+
+
+def base_url(config: dict[str, Any], key: str = "url") -> str:
+    """The configured URL without a trailing slash."""
+    return str(config.get(key, "")).strip().rstrip("/")
+
+
+@dataclass
+class MediaSource:
+    """An image or a live stream the server fetches from a service on a widget's behalf."""
+
+    url: str
+    headers: dict[str, str] = field(default_factory=dict)
+    params: dict[str, Any] = field(default_factory=dict)
+    #: How long the server may keep an image; 0 means every request goes to the service.
+    cache_seconds: float = 3600
+    media_type: str = ""
+    #: True for a service whose picture is an SVG drawn for exactly this use.
+    #:
+    #: ⚠️ Declared by the adapter, never guessed from the answer. The image
+    #: route refuses SVG, which is a document that can run script, and an
+    #: adapter that asks for it gets the answer checked for script and served
+    #: in a sandbox of its own.
+    svg: bool = False
+
+
+class ImagePath:
+    """One shape of path an adapter's pictures take through the image route.
+
+    ``path`` is a pattern the whole path has to match; every keyword names a
+    parameter the service needs for that picture and the pattern its value has
+    to match. A parameter that is not named, or one given twice, is refused.
+    Patterns are matched as they are written, upper and lower case included.
+    """
+
+    __slots__ = ("path", "query")
+
+    def __init__(self, path: str, **query: str) -> None:
+        self.path = re.compile(path)
+        self.query = {name: re.compile(value) for name, value in query.items()}
+
+    def fits(self, path: str, pairs: list[tuple[str, str]]) -> bool:
+        return bool(self.path.fullmatch(path)) and all(
+            name in self.query and self.query[name].fullmatch(value) for name, value in pairs)
+
+
+#: The path part of a picture's path: no percent sign, so nothing in it is
+#: encoded once or twice, and no backslash, semicolon, space or "@".
+_IMAGE_PATH_PART = re.compile(r"/[A-Za-z0-9/_.:~-]*")
+#: Its query before it is decoded. "/" and ":" arrive encoded there, the way
+#: the adapters write them, so a second "?" can only be a smuggled one.
+_IMAGE_QUERY_PART = re.compile(r"[A-Za-z0-9_.~%=&-]*")
+#: A decoded name or value: no percent sign left, so nothing was encoded twice.
+_IMAGE_QUERY_TEXT = re.compile(r"[A-Za-z0-9/_.:~-]*")
+#: What a decoded value may not carry even where its shape allows slashes: an
+#: address (``//``, so ``http://...``) or a step up (``..`` between slashes).
+_IMAGE_QUERY_LEAD = re.compile(r"//|(?:^|/)\.\.(?:/|$)")
+
+
+def image_path(adapter: Adapter, path: str) -> str:
+    """The path of a picture as it may go to the service, or an error with code ``bad_path``.
+
+    ⚠️ The image route fetches with the connection's credentials, and a GET is
+    not always harmless: Plex marks a film as watched on ``/:/scrobble`` and
+    scans a library on ``/library/sections/1/refresh``, and anybody who may
+    read the board, a kiosk included, may ask the route for any path. So every
+    adapter names the shapes of its pictures in ``image_paths``, and one that
+    names none hands out none. The default is nothing, not everything.
+
+    What comes back is put together again from what was checked, so the
+    service is sent exactly that and never a second reading of the original:
+    no ``..``, ``.`` or empty segment, nothing encoded in the path part,
+    nothing encoded twice in the query, no address or ``..`` inside a value,
+    no backslash, no control character,
+    no fragment, no parameter twice.
+    """
+    if not adapter.image_paths:
+        raise AdapterError(f"{adapter.label or 'This service'} hands out no pictures through nexdeck.", code="bad_path")
+    refused = AdapterError("That is not the path of a picture this service hands out.", code="bad_path")
+    part, mark, query = path.partition("?")
+    if not _IMAGE_PATH_PART.fullmatch(part) or not _IMAGE_QUERY_PART.fullmatch(query) or (mark and not query):
+        raise refused
+    if any(segment in ("", ".", "..") for segment in part[1:].split("/")):
+        raise refused
+    pairs: list[tuple[str, str]] = []
+    for piece in query.split("&") if query else ():
+        name, equals, value = piece.partition("=")
+        try:
+            name, value = unquote(name, errors="strict"), unquote(value, errors="strict")
+        except UnicodeDecodeError as failure:
+            raise refused from failure
+        if not equals or not _IMAGE_QUERY_TEXT.fullmatch(name) or not _IMAGE_QUERY_TEXT.fullmatch(value) or _IMAGE_QUERY_LEAD.search(value):
+            raise refused
+        pairs.append((name, value))
+    names = [name for name, _ in pairs]
+    if len(set(names)) != len(names) or not any(shape.fits(part, pairs) for shape in adapter.image_paths):
+        raise refused
+    return part + ("?" + "&".join(f"{quote(name, safe='')}={quote(value, safe='')}" for name, value in pairs) if pairs else "")
+
+
+#: What a button's target list says for an action that acts on the whole
+#: connection and needs nothing picked.
+WHOLE_CONNECTION = "Nothing to pick, it acts on the whole connection"
+
+
+#: The kinds a custom card cannot read through, each with the reason. Everything else that speaks HTTP can be read.
+#: ``tests/test_cards_source.py`` goes over every adapter: it is either readable or stands here.
+NOT_READ_BY_CARDS: dict[str, str] = {
+    "core": "builds the clock, notes and search of the dashboard itself, there is no service behind it",
+    "custom": "is the custom card itself",
+    "calendar": "joins the calendars of other connections, it has no address of its own",
+    "rss": "reads feed addresses typed into a card, there is no connection",
+    "weather": "asks a public weather service without a connection",
+    "hackernews": "reads a public site without a connection",
+    "stocks": "reads public quotes without a connection",
+    "publicip": "asks public services for the address of the server, there is no connection",
+    "docker": "talks to the Docker socket or engine, not to a web address",
+    "snmp": "speaks SNMP, not HTTP",
+    "wol": "sends a Wake-on-LAN packet and checks a port, it is no HTTP service",
+    "imap": "speaks the mail protocol, not HTTP",
+    "minecraft": "speaks the Minecraft status protocol over TCP, not HTTP",
+    "nut": "speaks the NUT protocol of upsd over TCP, not HTTP",
+}
+
+
+@dataclass(frozen=True)
+class Allowed:
+    """The values one place of a card's address may take: exactly these, or anything that starts like one of the prefixes.
+
+    Compared in lower case. ``denied`` wins over both: a value that begins like a read but is not one.
+    """
+
+    exact: frozenset[str] = frozenset()
+    prefixes: tuple[str, ...] = ()
+    denied: frozenset[str] = frozenset()
+
+    def __contains__(self, value: object) -> bool:
+        text = str(value).strip().lower()
+        if text in self.denied:
+            return False
+        return text in self.exact or any(text.startswith(prefix) for prefix in self.prefixes)
+
+
+def allowed(*exact: str, prefixes: tuple[str, ...] = (), denied: tuple[str, ...] = ()) -> Allowed:
+    return Allowed(frozenset(one.lower() for one in exact), tuple(one.lower() for one in prefixes), frozenset(one.lower() for one in denied))
+
+
+@dataclass(frozen=True)
+class ReadCommands:
+    """For a kind whose address carries the command: what a card may ask, everything else is refused before it is sent.
+
+    ``params`` maps a query parameter to the values it may take (an empty :func:`allowed` forbids the parameter
+    altogether); ``after`` maps a path segment to the values the segment that follows it may take (``/rest/<method>``);
+    ``last`` limits the last segment of every path; ``words`` adds whole words to the ones refused for every kind.
+    """
+
+    params: dict[str, Allowed] = field(default_factory=dict)
+    after: dict[str, Allowed] = field(default_factory=dict)
+    last: Allowed | None = None
+    words: frozenset[str] = frozenset()
+
+
+class Adapter:
+    """Base class. Subclasses set the class attributes and override the hooks."""
+
+    kind: str = ""
+    label: str = ""
+    category: str = "other"
+    description: str = ""
+    #: True for a kind somebody described in nexdeck itself (``custom:<short>``, KARTEN-3).
+    custom: bool = False
+    #: Icon name in dashboard-icons, e.g. ``radarr``.
+    icon: str = ""
+    #: True until someone confirms the adapter against a live instance.
+    beta: bool = True
+    docs_url: str = ""
+    fields: tuple[Field, ...] = ()
+    widgets: tuple[WidgetType, ...] = ()
+    #: Adapters without a connection (clock, notes) set this to False.
+    needs_integration: bool = True
+    #: Works without a connection, and takes one when there is: GitHub with a token.
+    optional_integration: bool = False
+    #: True when :meth:`barred` may refuse a card for a given connection, so
+    #: the library knows to ask before it adds one.
+    bars_widgets: bool = False
+    #: More words the adapter is found by, such as the vendors behind a
+    #: protocol. Brand names, so they are not translated.
+    keywords: tuple[str, ...] = ()
+    #: Steps drawn in the connection sheet, for a service that has to be set
+    #: up on its own side before nexdeck can reach it. English, translated by
+    #: their wording like every other adapter text.
+    guide: tuple[str, ...] = ()
+    #: The shapes of the paths this adapter's pictures take through the image
+    #: route (``proxy:/path``), checked by :func:`image_path` before anything
+    #: is fetched or served from the cache. Empty means no pictures at all: an
+    #: adapter that hands out ``proxy:`` paths names every shape it writes, as
+    #: narrowly as the service allows (``tests/test_image_paths.py`` holds it
+    #: to that).
+    image_paths: tuple[ImagePath, ...] = ()
+
+    def widget(self, kind: str) -> WidgetType:
+        for w in self.widgets:
+            if w.kind == kind:
+                return w
+        raise KeyError(kind)
+
+    def default_link(self, config: dict[str, Any]) -> str:
+        return base_url(config)
+
+    def check_address(self, config: dict[str, Any]) -> str:
+        """The address a reachability check follows for a tile on this connection: its link, unless a kind knows a better one."""
+        return self.default_link(config)
+
+    def image_headers(self, config: dict[str, Any]) -> dict[str, str]:
+        """Headers for fetching a service's images (posters, thumbnails) through the server.
+
+        Adapters put an image behind ``proxy:/path`` instead of a full address,
+        so a token never travels into an image URL in the browser.
+        """
+        return {}
+
+    async def image_source(self, config: dict[str, Any], path: str, ctx: Context) -> MediaSource:
+        """Where an image behind ``proxy:/path`` really comes from.
+
+        The default fetches the path from the service with ``image_headers`` and
+        lets the server keep it for an hour. Adapters whose images need a
+        session token or must stay fresh (camera snapshots) override this.
+        The path has passed :func:`image_path` against ``image_paths`` first.
+        """
+        return MediaSource(url=f"{base_url(config)}{path}", headers=self.image_headers(config))
+
+    async def stream_source(self, config: dict[str, Any], options: dict[str, Any], ctx: Context) -> MediaSource:
+        """Where a widget's live video comes from; only camera adapters have one."""
+        raise AdapterError("This widget has no live stream.", code="no_stream")
+
+    async def file_source(self, config: dict[str, Any], path: str, ctx: Context) -> MediaSource:
+        """Where a file a row offers to save really comes from.
+
+        Same shape as :meth:`image_source`, and the same reason: the server
+        fetches with the service's credentials, so the browser never sees them
+        and never has to reach the service at all. On a homelab where nexdeck
+        is the only thing published, that is the difference between a link that
+        works from outside and one that does not.
+        """
+        return MediaSource(url=f"{base_url(config)}{path}", headers=self.image_headers(config))
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "kind": self.kind,
+            "custom": self.custom,
+            "label": self.label,
+            "category": self.category,
+            "description": self.description,
+            "icon": self.icon,
+            "beta": self.beta,
+            "docs_url": self.docs_url,
+            "needs_integration": self.needs_integration,
+            "optional_integration": self.optional_integration,
+            "bars_widgets": self.bars_widgets,
+            "keywords": list(self.keywords),
+            "guide": list(self.guide),
+            "fields": [f.to_dict() for f in self.fields],
+            "widgets": [w.to_dict(self.kind) for w in self.widgets],
+        }
+
+    # -- hooks ---------------------------------------------------------------
+
+    async def test(self, config: dict[str, Any], ctx: Context) -> str:
+        """Check the connection; return a short human-readable result."""
+        raise NotImplementedError
+
+    async def running_version(self, config: dict[str, Any], ctx: Context) -> str | None:
+        """The version the service runs, or None when it does not say.
+
+        Read from what the test says, "Sonarr 4.0.11.2680 answers", because
+        nearly every test already asks the service for it. An adapter whose
+        test sentence carries some other number first overrides this.
+        """
+        from ..services.versions import version_in
+
+        return version_in(await self.test(config, ctx))
+
+    async def fetch(
+        self, widget_kind: str, config: dict[str, Any], options: dict[str, Any], ctx: Context
+    ) -> WidgetData:
+        raise NotImplementedError
+
+    async def action(
+        self,
+        widget_kind: str,
+        action_id: str,
+        params: dict[str, Any],
+        config: dict[str, Any],
+        options: dict[str, Any],
+        ctx: Context,
+    ) -> str:
+        raise AdapterError("This widget has no actions.", code="no_such_action")
+
+    async def impact(
+        self, widget_kind: str, action_id: str, params: dict[str, Any], config: dict[str, Any], ctx: Context
+    ) -> list[dict[str, Any]]:
+        """What one of this adapter's buttons hits that only the service can say (``services/impact.py``).
+
+        Facts as ``{"fact": ..., ...}``; nothing by default. Read only: asking
+        what a button would do must never do it.
+        """
+        return []
+
+    async def things(self, config: dict[str, Any], ctx: Context) -> dict[str, Any] | None:
+        """What runs here (roadmap M5): ``{"host": [addresses of this engine], "things": [...]}``, or None.
+
+        Each thing: ``kind`` (``container``, ``guest``), ``key``, ``name``,
+        ``image``, ``state``, ``addresses``, ``ports`` (published on the
+        host) and ``host_network``. Read only, about once an hour
+        (``services/dependencies.py``).
+        """
+        return None
+
+    async def container_log(self, config: dict[str, Any], ctx: Context, container: str, lines: int) -> list[str] | None:
+        """The last lines of one container's log, oldest first; ``None`` where this service gives none.
+
+        Read only. The assistant asks for it once the person allowed it
+        (``services/assistant/tools.py``).
+        """
+        return None
+
+    #: What a button card may ask this adapter to do. Empty for almost every
+    #: adapter, and that is the point: see :class:`Deed`.
+    deeds: tuple[Deed, ...] = ()
+
+    async def choices(self, field: str, config: dict[str, Any], ctx: Context) -> list[tuple[str, str]]:
+        """What to offer in a field whose answers come from the service.
+
+        ⚠️ Values, not guesses. A field like "which switch" cannot be written
+        into the spec, because the answer lives on the console. Typing a name
+        instead works until there are fourteen of them.
+
+        Returns ``(value, label)`` pairs. An adapter that has no such field
+        says so by returning nothing.
+
+        ``deed`` is answered here for every adapter: it is the allowlist of
+        actions a button may be pointed at, and it comes from the class rather
+        than from the service.
+        """
+        if field == "deed":
+            return [(one.id, one.label) for one in self.deeds]
+        if field == "target":
+            # What the one declared action acts on. ⚠️ Refuses rather than
+            # guesses when there is more than one: the caller asked for "the
+            # target" and two deeds have two different ones, so the day a
+            # second deed appears this has to be told which, not left to pick.
+            with_target = [one for one in self.deeds if one.target_field]
+            if self.deeds and not with_target:
+                # ⚠️ Said, not left empty: an empty list reads "this connection
+                # offers nothing to pick" in yellow, about a speed test that
+                # needs nothing picked.
+                return [("", WHOLE_CONNECTION)]
+            if len(with_target) != 1:
+                return []
+            return await self.choices(with_target[0].target_field, config, ctx)
+        return []
+
+    async def barred(self, widget_kind: str, config: dict[str, Any], ctx: Context) -> str:
+        """Why this connection cannot carry this card, or ``""`` when it can.
+
+        ⚠️ For a refusal the service itself states, such as a nexmail key that
+        may only read counts and a card that lists senders. A card like that
+        would only ever show its hint, so the library says it before the card
+        exists. Only asked when :attr:`bars_widgets` is set.
+        """
+        return ""
+
+    def demo_choices(self, field: str) -> list[tuple[str, str]]:
+        """The same list, for a connection that points nowhere.
+
+        ⚠️ A demo connection has an address like ``demo.invalid``, so asking
+        the service is asking nothing: the dropdown came back empty and said
+        "this connection offers nothing", which is exactly what a demo Plex
+        looks like from the outside and exactly not what it is. The demo data
+        already contains the answer; this hands it over.
+        """
+        return []
+
+    def deed(self, deed_id: str) -> Deed | None:
+        """The declared action with this id, or nothing.
+
+        ⚠️ The only way a button reaches an action. An id that is not in
+        ``deeds`` is refused, whatever a card's saved options say, because the
+        options are written by whoever may edit the board and the declaration
+        is written here.
+        """
+        return next((one for one in self.deeds if one.id == deed_id), None)
+
+    def detect(self, widget_kind: str, before: WidgetData | None, after: WidgetData,
+               options: dict[str, Any]) -> list[Detected]:
+        """What happened between the last fetch and this one.
+
+        The collector holds both and asks after every successful fetch. Most
+        adapters know of nothing; those that do put the knowledge here, where
+        the service is understood, rather than in a rule the collector guesses
+        at from the outside.
+        """
+        return []
+
+    def demo(self, widget_kind: str, options: dict[str, Any], tick: int) -> WidgetData:
+        raise NotImplementedError
+
+    async def close(self, config: dict[str, Any], ctx: Context) -> None:
+        """Hand back a session the adapter holds at the service; called when the server stops.
+
+        Devices that count sessions (Reolink) fill up otherwise, one restart at a time.
+        """
+        return None
+
+    def secret_field_names(self) -> set[str]:
+        return {f.name for f in self.fields if f.secret}
+
+    # -- custom cards read through a connection (KARTEN-2) ----------------------
+
+    #: Set by a kind whose connection is not one address of a web service, but a fixed API root (GitHub, Cloudflare).
+    raw_root: str = ""
+
+    @property
+    def raw_access(self) -> bool:
+        """Whether a custom card may read through a connection of this kind.
+
+        ⚠️ Every kind that speaks HTTP may. The safety does not sit in a list of kinds that were tried one by one but in
+        what every read has to pass (GET only, underneath the address, no redirect to another place, 2 MB, time limits,
+        administrators only) and in the credentials never leaving the connection's address. The kinds that cannot be
+        read are the ones listed in :data:`NOT_READ_BY_CARDS`, each with its reason.
+        """
+        return self.kind not in NOT_READ_BY_CARDS
+
+    def raw_base(self, config: dict[str, Any]) -> str:
+        """The address a card's path is put underneath; an adapter whose address is not ``url`` overrides it."""
+        if self.raw_root:
+            return self.raw_root
+        found = base_url(config)
+        if found:
+            return found
+        # ntfy offers its public server when the address is left empty.
+        return str(next((one.default for one in self.fields if one.name == "url" and one.default), "")).rstrip("/")
+
+    def raw_headers(self, config: dict[str, Any]) -> dict[str, str]:
+        """What the connection sends with every request, from the helper the adapter already has."""
+        found = getattr(self, "_headers", None)
+        return dict(found(config) or {}) if callable(found) else {}
+
+    def raw_auth(self, config: dict[str, Any]) -> tuple[str, str] | None:
+        found = getattr(self, "_auth", None)
+        return found(config) if callable(found) else None
+
+    def raw_verify(self, config: dict[str, Any]) -> bool:
+        """TLS errors are ignored when the connection says so (KARTEN-2 EC-5), with the adapter's own default."""
+        default = next((one.default for one in self.fields if one.name == "insecure"), False)
+        return not bool(config.get("insecure", default))
+
+    #: Names of parameters that carry a key or a session for this kind and do not look like one (``rawread`` copies
+    #: the others by their name alone).
+    raw_param_names: tuple[str, ...] = ()
+
+    #: Set by a kind whose address carries the command (``?cmd=``, ``?mode=``, ``/rest/<method>``): the reads a card may
+    #: ask. ⚠️ GET is not "reads": ``GET /api.cgi?cmd=Reboot`` restarts a camera. A card can come from a shop, so what it
+    #: asks is checked against this before it leaves (see :func:`.rawread.refuse_a_command`).
+    raw_read_commands: ReadCommands | None = None
+
+    def raw_client(self, config: dict[str, Any], ctx: Context) -> httpx.AsyncClient | None:
+        """The client that holds this kind's session cookie, for a kind that signs in once and keeps the cookie."""
+        return None
+
+    async def raw_sign_in(self, config: dict[str, Any], ctx: Context) -> None:
+        """Sign in again, by the kind's own sign-in, on the client of :meth:`raw_client`."""
+        raise NotImplementedError
+
+    #: True for a kind that signs in by itself with a session of its own (an own connection of the session type): then
+    #: :func:`.rawread.ask` leaves renewing the session to :meth:`raw_renew` and never runs the kind's connection test.
+    raw_session: bool = False
+
+    async def raw_signed(
+        self, config: dict[str, Any], ctx: Context
+    ) -> tuple[dict[str, str], dict[str, Any], tuple[str, str] | None] | None:
+        """Headers, parameters and login that sign a request, when the kind knows them from its configuration alone."""
+        return None
+
+    async def raw_renew(
+        self,
+        config: dict[str, Any],
+        ctx: Context,
+        refused: tuple[dict[str, str], dict[str, Any], tuple[str, str] | None],
+        *,
+        again: bool,
+    ) -> tuple[dict[str, str], dict[str, Any], tuple[str, str] | None] | None:
+        """What signs the request after the service said 401 to ``refused``; see :attr:`raw_session`."""
+        return None
+
+    def raw_accepted(self, ctx: Context) -> None:
+        """The service answered a signed request of a card; a kind with a session of its own notes that it works."""
+
+    async def raw_signed_headers(self, config: dict[str, Any], ctx: Context) -> dict[str, str] | None:
+        """Headers that sign a request when they have to be fetched first (a token from another host); ``None`` for most."""
+        return None
+
+    def raw_expired(self, response: httpx.Response) -> bool:
+        """True when an answer that is no 401 or 403 says the session ran out (DSM answers 200 with an error code)."""
+        return False
+
+    def raw_params(self, config: dict[str, Any]) -> dict[str, Any]:
+        """Parameters of the address that sign a request, for a kind whose key travels there and has a helper for it."""
+        return {}
+
+    async def raw_request(
+        self,
+        method: str,
+        path: str,
+        config: dict[str, Any],
+        ctx: Context,
+        *,
+        params: dict[str, Any] | None = None,
+        json_body: Any = None,
+        cache_seconds: float = 0,
+    ) -> httpx.Response:
+        """One request a custom card makes, signed the way the built-in cards of this kind are.
+
+        ⚠️ Never follows a redirect: the answer comes back as it is and the caller refuses a 3xx. The credentials
+        belong to the address of the connection and go nowhere else, whatever the service answers.
+        """
+        if not self.raw_access:
+            raise AdapterError(
+                f"{self.label} cannot be read by a custom card.",
+                code="no_raw_access",
+                hint="Pick a connection of another kind.",
+            )
+        # ⚠️ The guard sits here and not in the callers: a caller that is added later cannot send anything else.
+        if method.upper() != "GET":
+            raise AdapterError("A custom card only reads: it asks with GET.", code="method_refused", hint="Nothing but a GET leaves for a service.")
+        from . import rawread
+
+        rawread.refuse_a_command(self, path)
+        return await rawread.ask(self, method, path, config, ctx, params=params, json_body=json_body, cache_seconds=cache_seconds)
+
+    async def raw_act(
+        self,
+        method: str,
+        path: str,
+        config: dict[str, Any],
+        ctx: Context,
+        *,
+        json_body: Any = None,
+        form: dict[str, str] | None = None,
+    ) -> httpx.Response:
+        """The one request a button of a custom card makes, signed the way the card's reads are (KARTEN-8).
+
+        ⚠️ The only way a custom card changes something. POST, PUT, PATCH and DELETE, nothing else: a GET goes through
+        :meth:`raw_request` with its guards and no button has one. No word is barred, the button is the wanted effect,
+        but a kind a card cannot read has no buttons either. A redirect is never followed.
+        """
+        if not self.raw_access:
+            raise AdapterError(f"{self.label} cannot be used by a custom card.", code="no_raw_access", hint="Pick a connection of another kind.")
+        if method.upper() not in ACT_METHODS:
+            raise AdapterError("A button changes something: it sends POST, PUT, PATCH or DELETE.", code="method_refused")
+        from . import rawread
+
+        return await rawread.act(self, method.upper(), path, config, ctx, json_body=json_body, form=form)
+
+
+#: What a button of a custom card may send (:meth:`Adapter.raw_act`).
+ACT_METHODS = ("POST", "PUT", "PATCH", "DELETE")
+
+
+async def hand_back(adapter: Adapter, config: dict[str, Any], ctx: Context) -> None:
+    """Let an adapter log out of whatever ``ctx`` holds, briefly, and never fail what it follows.
+
+    ⚠️ Everything that opens a context and lets it go has to come past here: the
+    Test button, a dropdown asked of the service, a connection saved or deleted,
+    the server stopping. On 11.09.2026 three of those simply dropped the
+    context, and every press of Test cost a seat at a Reolink hub for an hour.
+    """
+    try:
+        await asyncio.wait_for(adapter.close(config, ctx), timeout=3)
+    except Exception:  # noqa: BLE001 - a goodbye that fails must not fail the answer it follows
+        logger.debug("%s could not hand back its session.", adapter.kind)
+
+
+# ---------------------------------------------------------------------------
+# Small helpers shared by adapters
+# ---------------------------------------------------------------------------
+
+
+def human_bytes(value: float | int | None) -> str:
+    if value is None:
+        return "?"
+    size = float(value)
+    for unit in ("B", "KB", "MB", "GB", "TB", "PB"):
+        if size < 1024 or unit == "PB":
+            return f"{size:.0f} {unit}" if unit == "B" else f"{size:.1f} {unit}"
+        size /= 1024
+    return f"{size:.1f} PB"
+
+
+def human_rate(bytes_per_second: float | None) -> str:
+    if bytes_per_second is None:
+        return "?"
+    return human_bytes(bytes_per_second) + "/s"
+
+
+def percent(part: float | None, whole: float | None) -> float | None:
+    """A share of a whole, or ``None`` when there is nothing to divide by.
+
+    ⚠️ This used to answer 0.0 to "I do not know", and it is the common root of
+    a handful of cards that reported a healthy nothing: Nextcloud stood at 0
+    percent used because the disk size was missing, the UPS card showed a
+    charge of 0 percent because the UPS does not report one, and the UniFi
+    statistics went into the history as a measured zero whenever the query
+    failed. Zero is a number a service can genuinely report, so "unknown" has
+    to be something else, and a card that does not know says so.
+    """
+    if not whole or part is None:
+        return None
+    return round(100.0 * float(part) / float(whole), 1)
+
+
+def status_from_percent(value: float | None, warn: float = 80, bad: float = 95) -> Status:
+    """A colour for a share. Nothing measured is nothing to colour green."""
+    if value is None:
+        return "unknown"
+    if value >= bad:
+        return "bad"
+    if value >= warn:
+        return "warn"
+    return "ok"
+
+
+def worst(*values: float | None) -> float | None:
+    """The highest of the shares that are actually known.
+
+    For the cards that colour themselves by whichever of CPU, memory and disk
+    is worst. A missing one must not pull the answer down to zero, and all of
+    them missing is not a zero either.
+    """
+    known = [value for value in values if value is not None]
+    return max(known) if known else None
+
+
+def percent_text(value: float | None, digits: int = 0) -> str:
+    """A share for the eye: ``"73%"``, or ``"?"`` when nothing was measured."""
+    return "?" if value is None else f"{value:.{digits}f}%"
+
+
+def percent_primary(label: str, value: float | None) -> dict[str, Any]:
+    """The big number of a card. Without a unit when there is no number: the
+    frontend draws a dash for ``None`` and would otherwise put a "%" after it.
+    """
+    return {"label": label, "value": value, "unit": "%" if value is not None else ""}
+
+
+def measured(values: dict[str, float | None]) -> dict[str, float]:
+    """Only what was actually measured goes into the history.
+
+    ⚠️ A failed query used to be written down as a zero, and a zero in the
+    history is indistinguishable from a real one: the sparkline dips, the
+    average drops, and nothing says the number was never taken.
+    """
+    return {name: value for name, value in values.items() if value is not None}
+
+
+def duration_short(seconds: float | None) -> str:
+    if seconds is None:
+        return "?"
+    seconds = int(seconds)
+    if seconds < 60:
+        return f"{seconds}s"
+    minutes, seconds = divmod(seconds, 60)
+    if minutes < 60:
+        return f"{minutes}m {seconds}s" if seconds else f"{minutes}m"
+    hours, minutes = divmod(minutes, 60)
+    if hours < 48:
+        return f"{hours}h {minutes}m" if minutes else f"{hours}h"
+    days, hours = divmod(hours, 24)
+    return f"{days}d {hours}h" if hours else f"{days}d"
+
+
+def ago(moment: Any, now: float | None = None) -> str:
+    """How long ago something happened: ``"12 min"``, ``"3 h"`` or ``"2 d"``.
+
+    Takes an ISO time with ``Z`` or an offset, or seconds since the epoch, and
+    answers ``""`` for anything it cannot read. A card then shows nothing
+    rather than an age that is wrong. The words are units, not sentences, so
+    they read the same in both languages.
+
+    ``now`` in seconds since the epoch, for a card that works out other things
+    against the same moment; a test that fixes it does not turn red the next day.
+    """
+    if moment is None or moment == "" or isinstance(moment, bool):
+        return ""
+    try:
+        if isinstance(moment, int | float):
+            when = datetime.fromtimestamp(float(moment), UTC)
+        else:
+            when = datetime.fromisoformat(str(moment).replace("Z", "+00:00"))
+            if when.tzinfo is None:
+                when = when.replace(tzinfo=UTC)
+    except (ValueError, OverflowError, OSError):
+        return ""
+    reference = datetime.fromtimestamp(now, UTC) if now is not None else datetime.now(UTC)
+    seconds = max(0.0, (reference - when).total_seconds())
+    if seconds < 3600:
+        return f"{int(seconds // 60)} min"
+    if seconds < 86400:
+        return f"{int(seconds // 3600)} h"
+    return f"{int(seconds // 86400)} d"
+
+
+@dataclass
+class Series:
+    """A tiny helper for adapters that build several list items."""
+
+    items: list[dict[str, Any]] = field(default_factory=list)
+
+    def add(self, **item: Any) -> None:
+        self.items.append(item)

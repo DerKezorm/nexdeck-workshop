@@ -1,0 +1,42 @@
+name: submit
+
+# Checks the submissions that wait and adds the good ones (Briefing Q10: automatic when every check is green).
+# One run at a time, none cancelled: the submissions are taken one after the other, and the last one wins.
+on:
+  issues:
+    types: [opened, edited]
+
+permissions:
+  contents: write
+  issues: write
+  discussions: write
+
+concurrency:
+  group: workshop-write
+  cancel-in-progress: false
+
+jobs:
+  submit:
+    if: github.event.issue.state == 'open'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install -r requirements.txt -r kit/requirements.txt -r requirements-render.txt
+      - run: python -m playwright install --with-deps chromium
+      - name: Check the submissions
+        run: python -m tools.submit --issue "$ISSUE"
+        env:
+          ISSUE: ${{ github.event.issue.number }}
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Push
+        run: .github/scripts/push.sh "Update the workshop from issue $ISSUE"
+        env:
+          ISSUE: ${{ github.event.issue.number }}
+      - name: Comment and close
+        run: python -m tools.publish
+        env:
+          GITHUB_TOKEN: ${{ github.token }}

@@ -1,0 +1,70 @@
+name: Submit a card or a connection
+description: Hand a custom card or an own connection in to the workshop. It is checked by an action and, when it passes, added.
+title: "Submit: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Everything you write here is public once the submission is accepted, and it stays in the history of this repository.
+        **A submission is published under the MIT License.** Do not put keys, tokens or passwords in it; the check refuses them.
+        The easiest way to submit is the Card shop in nexdeck, which fills in this form for you.
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type
+      options:
+        - Card
+        - Connection
+    validations:
+      required: true
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      description: Exactly one.
+      options:
+        - Media
+        - Downloads
+        - Network
+        - Server
+        - Smart home
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: definition
+    attributes:
+      label: Definition
+      description: The text of the card or connection as nexdeck saves it, including the demo data (a card needs them for its picture).
+      render: yaml
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What it shows or reads, in English, in a few sentences. Plain text.
+    validations:
+      required: true
+  - type: textarea
+    id: changes
+    attributes:
+      label: Changes
+      description: For an update, what changed. Leave empty for a new entry.
+  - type: input
+    id: based_on
+    attributes:
+      label: Based on
+      description: If your entry builds on another one, its id, such as 123456/queue-size. Leave empty otherwise.
+  - type: input
+    id: update_of
+    attributes:
+      label: Update of
+      description: Only for a maintainer who updates somebody else's entry, its id. Leave empty otherwise.
+  - type: checkboxes
+    id: license
+    attributes:
+      label: License
+      options:
+        - label: I submit this under the MIT License and I have the right to do so.
+          required: true
