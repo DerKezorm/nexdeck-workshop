@@ -118,3 +118,10 @@ def test_karten13_b6_the_key_is_given_to_the_steps_that_use_it_and_to_no_other()
                 if "GITHUB_TOKEN" in (step.get("env") or {}):
                     assert step["env"]["GITHUB_TOKEN"] == "${{ github.token }}"
                     assert "pip install" not in step.get("run", "") and "playwright install" not in step.get("run", "")
+
+
+def test_karten13_b6_every_step_that_pushes_has_the_key_because_the_checkout_keeps_none() -> None:
+    pushing = [(name, step) for name in NAMES for job in _load(name)["jobs"].values() for step in job["steps"] if "push.sh" in step.get("run", "")]
+    assert len(pushing) == 4
+    for name, step in pushing:
+        assert step["env"]["GITHUB_TOKEN"] == "${{ github.token }}", name

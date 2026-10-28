@@ -35,6 +35,8 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
       - name: Push
         run: bash .github/scripts/push.sh "Daily update of the workshop"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
       - name: Comment and close
         run: python -m tools.publish
         env:

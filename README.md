@@ -54,4 +54,6 @@ A made-up connection that signs in with a user name and a password. A test entry
 | `schema/` | The JSON schemas of a card and of a connection |
 | `kit/` | The check and the drawing page, taken from nexdeck (see `kit/VERSION`) |
 | `tools/` | The code of the actions |
+| `state.json` | The moment up to which the last run took up issues and comments (made by the actions) |
+| `orders/` | Removals started by hand that no run has carried out yet (made by the actions) |
 | `MAINTAINERS` | The people who can update and remove any entry |

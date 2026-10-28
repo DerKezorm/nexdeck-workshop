@@ -38,6 +38,7 @@ jobs:
         run: bash .github/scripts/push.sh "Update the workshop from issue $ISSUE"
         env:
           ISSUE: ${{ github.event.issue.number }}
+          GITHUB_TOKEN: ${{ github.token }}
       - name: Comment and close
         run: python -m tools.publish
         env:
