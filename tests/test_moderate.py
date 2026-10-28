@@ -328,3 +328,20 @@ def test_karten13_ac6_every_new_entry_gets_a_discussion_and_a_removed_one_none(c
     run(ctx)
     assert [one["title"] for one in hub.discussions] == ["Queue size (101/test-queue-size)", "Queue size (202/test-queue-size)"]
     assert json.loads((root / "catalog.json").read_text(encoding="utf-8"))["entries"][1]["discussion"].endswith("/discussions/2")
+
+
+def test_karten13_b3_the_first_run_has_no_moment_to_start_from_and_looks_an_hour_back(ctx: Any, hub: FakeHub, root: Path) -> None:
+    _accepted(ctx, hub)
+    (root / "state.json").unlink()
+    ctx.clock = NOON + timedelta(hours=5)
+    hub.now = ctx.clock - timedelta(minutes=10)
+    hub.say(1, MAINTAINER, "/remove not_useful Nothing a plain card does not.")
+    run(ctx)
+    assert _entry(root)["removed"]["level"] == "not_useful", "the comment that woke the very first run"
+    moderate.restore(ctx, ID)
+    (root / "state.json").unlink()
+    ctx.clock = NOON + timedelta(hours=9)
+    hub.now = ctx.clock - timedelta(hours=4)
+    hub.say(1, MAINTAINER, "/remove harmful Written hours before.")
+    run(ctx)
+    assert _entry(root)["removed"] is None, "but not what was written hours before"

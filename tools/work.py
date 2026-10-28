@@ -19,6 +19,8 @@ from .common import ROOT, iso
 
 #: The daily run looks this far back for commands nobody carried out.
 COMMAND_LOOKBACK = timedelta(days=2)
+#: ... and the first run, which has no moment to start from, looks this far back.
+FIRST_LOOKBACK = timedelta(hours=1)
 
 
 def run(ctx: submit.Context, *, issue: int | None = None, force: bool = False, daily_run: bool = False) -> list[dict[str, Any]]:
@@ -28,8 +30,8 @@ def run(ctx: submit.Context, *, issue: int | None = None, force: bool = False, d
         print(line)
     began = state.since_of(ctx.root)
     since = None if daily_run else began
-    # Commands are looked for from the last moment that was complete (and for two days back in the daily run).
-    asked_since = began or iso(ctx.clock)
+    # Commands are looked for from the last moment that was complete (an hour back when there is none yet, two days back in the daily run).
+    asked_since = began or iso(ctx.clock - FIRST_LOOKBACK)
     if daily_run:
         asked_since = min(asked_since, iso(ctx.clock - COMMAND_LOOKBACK))
     replies, rechecks = moderate.catch_up(ctx, asked_since)
