@@ -68,3 +68,17 @@ def test_karten13_ac6_a_repository_without_discussions_gives_none() -> None:
 
 def test_karten13_ac6_only_the_thumbs_up_are_counted() -> None:
     assert _hub(Server([])).thumbs("D_1") == 3
+
+
+def test_karten13_b6_the_process_that_reads_a_submission_gets_no_key(tmp_path: Any, monkeypatch: Any) -> None:
+    from tools import kitcheck
+
+    kit = tmp_path / "kit"
+    kit.mkdir()
+    (kit / "check.py").write_text("import json, os\nprint(json.dumps({'ok': False, 'problems': [], 'seen': sorted(os.environ)}))\n", encoding="utf-8")
+    for name in ("GITHUB_TOKEN", "ACTIONS_RUNTIME_TOKEN", "SOME_SECRET"):
+        monkeypatch.setenv(name, "value-for-tests")
+    seen = [name.upper() for name in kitcheck.check("x: 1\n", "card", None, kit)["seen"]]
+    assert "GITHUB_TOKEN" not in seen and "ACTIONS_RUNTIME_TOKEN" not in seen and "SOME_SECRET" not in seen
+    assert not [name for name in seen if name.startswith(("GITHUB", "ACTIONS", "RUNNER")) or "TOKEN" in name or "SECRET" in name], seen
+    assert "PATH" in seen, "the programs are still found"

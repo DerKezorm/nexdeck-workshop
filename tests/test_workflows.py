@@ -98,3 +98,23 @@ def test_karten13_b3_every_write_action_runs_the_same_work_from_the_state() -> N
     for name, command in (("submit", "python -m tools.work --issue"), ("daily", "python -m tools.work --daily")):
         steps = [step.get("run", "") for step in _load(name)["jobs"][name]["steps"]]
         assert any(step.startswith(command) for step in steps), name
+
+
+def test_karten13_b6_no_checkout_leaves_the_key_in_the_repository() -> None:
+    steps = [(name, step) for name in NAMES for job in _load(name)["jobs"].values() for step in job["steps"] if str(step.get("uses", "")).startswith("actions/checkout")]
+    assert len(steps) >= 5
+    for name, step in steps:
+        assert step.get("with", {}).get("persist-credentials") is False, name
+
+
+def test_karten13_b6_the_key_is_given_to_the_steps_that_use_it_and_to_no_other() -> None:
+    """The steps that install or read nothing of a stranger have no key; the key is no workflow-wide variable."""
+    for name in NAMES:
+        flow = _load(name)
+        assert "GITHUB_TOKEN" not in (flow.get("env") or {}), name
+        for job in flow["jobs"].values():
+            assert "GITHUB_TOKEN" not in (job.get("env") or {}), name
+            for step in job["steps"]:
+                if "GITHUB_TOKEN" in (step.get("env") or {}):
+                    assert step["env"]["GITHUB_TOKEN"] == "${{ github.token }}"
+                    assert "pip install" not in step.get("run", "") and "playwright install" not in step.get("run", "")

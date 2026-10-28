@@ -7,6 +7,7 @@ modules, and with a time limit: a definition that makes the reader slow or break
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -16,6 +17,13 @@ from typing import Any
 from .common import ROOT
 
 TIMEOUT_SECONDS = 120
+#: The only variables the process of the kit gets: where to find programs and a place for temporary files, nothing else.
+#: ⚠️ Above all not ``GITHUB_TOKEN``: this process reads the text of a stranger.
+KEEP_ENV = ("PATH", "SYSTEMROOT", "SYSTEMDRIVE", "WINDIR", "TEMP", "TMP", "TMPDIR", "HOME", "LANG", "LC_ALL")
+
+
+def clean_env() -> dict[str, str]:
+    return {**{key: os.environ[key] for key in KEEP_ENV if key in os.environ}, "PYTHONIOENCODING": "utf-8"}
 
 
 def kit_version(kit: Path | None = None) -> dict[str, str]:
@@ -35,7 +43,7 @@ def check(text: str, kind: str, texts: dict[str, str] | None = None, kit: Path |
             file.write_text(body, encoding="utf-8", newline="\n")
             command += ["--scan", f"{label}={file}"]
         try:
-            done = subprocess.run(command, cwd=work, capture_output=True, text=True, timeout=TIMEOUT_SECONDS, check=False)
+            done = subprocess.run(command, cwd=work, env=clean_env(), capture_output=True, text=True, encoding="utf-8", timeout=TIMEOUT_SECONDS, check=False)
         except subprocess.TimeoutExpired:
             return _failed("The check took too long. Make the definition smaller.")
     try:
