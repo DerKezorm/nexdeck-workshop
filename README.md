@@ -26,7 +26,7 @@ Every submission is published under the [MIT License](LICENSE).
 
 #### [Downloads](entries/188376159/test-downloads) (test)
 
-Card, version 1.1.0, reach: read, by [DerKezorm](https://github.com/DerKezorm), 0 thumbs up
+Card, version 1.1.0, reach: read, by [DerKezorm](https://github.com/DerKezorm), 1 thumbs up
 
 Shows the torrents of a download client with their progress. A test entry that stays as test data.
 

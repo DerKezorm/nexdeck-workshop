@@ -1,6 +1,6 @@
 {
   "format": 1,
-  "generated_at": "2026-10-28T11:27:06Z",
+  "generated_at": "2026-10-28T11:28:25Z",
   "entries": [
     {
       "id": "188376159/test-box",
@@ -77,7 +77,7 @@
         "light": "entries/188376159/test-downloads/preview-light.png",
         "dark": "entries/188376159/test-downloads/preview-dark.png"
       },
-      "thumbs": 0,
+      "thumbs": 1,
       "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/5",
       "based_on": null,
       "updated_at": "2026-10-28T11:25:34Z",
