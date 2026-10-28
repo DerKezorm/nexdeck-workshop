@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 import pytest
@@ -58,14 +59,31 @@ def test_karten13_the_test_workflow_only_reads() -> None:
     assert _load("test")["permissions"] == {"contents": "read"}
 
 
+#: What a stranger can write or choose: the issue, the comment, the branch of a pull request, and the inputs of a manual run.
+STRANGER = re.compile(r"\$\{\{[^}]*\b(?:inputs|github\.event\.|github\.head_ref)", re.IGNORECASE)
+
+
+def _runs() -> list[tuple[str, str]]:
+    return [(name, step["run"]) for name in NAMES for job in _load(name)["jobs"].values() for step in job["steps"] if "run" in step]
+
+
 def test_karten13_no_text_of_a_stranger_goes_into_a_command() -> None:
-    """Titles, bodies and comments are read by the Python tools through the API, never pasted into a shell line."""
-    for name in NAMES:
-        for job in _load(name)["jobs"].values():
-            for step in job["steps"]:
-                if "run" in step:
-                    for word in ("issue.title", "issue.body", "comment.body", "head_ref"):
-                        assert word not in step["run"], (name, step)
+    """Titles, bodies, comments and inputs are read by the Python tools or taken from ``env:``, never pasted into a shell line."""
+    for name, command in _runs():
+        assert not STRANGER.search(command), (name, command)
+
+
+def test_karten13_the_guard_against_text_in_a_command_sees_what_it_is_for() -> None:
+    for pasted in (
+        'echo "${{ inputs.reason }}"',
+        "echo ${{ github.event.issue.title }}",
+        "echo ${{ github.event.comment.body }}",
+        "echo ${{ github.head_ref }}",
+        "echo ${{inputs.entry}}",
+    ):
+        assert STRANGER.search(pasted), pasted
+    for fine in ("python -m tools.work", 'echo "$ISSUE"', "echo ${{ github.run_id }}"):
+        assert not STRANGER.search(fine), fine
 
 
 def test_karten13_the_commands_of_the_comments_are_only_taken_from_people() -> None:

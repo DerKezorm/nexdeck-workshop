@@ -1,0 +1,24 @@
+# expect: has at most 10 buttons
+nexdeck-card: 1
+slug: test-many-buttons
+name: Too many buttons
+version: 1.0.0
+description: Eleven buttons, one more than a card may have.
+requires: [jsonapi]
+requests: [{id: q, path: /api/queue}]
+form: value
+value: {path: count, label: Queue, format: number}
+buttons:
+  - {id: b0, label: Button 0, method: POST, path: /api/queue/b0}
+  - {id: b1, label: Button 1, method: POST, path: /api/queue/b1}
+  - {id: b2, label: Button 2, method: POST, path: /api/queue/b2}
+  - {id: b3, label: Button 3, method: POST, path: /api/queue/b3}
+  - {id: b4, label: Button 4, method: POST, path: /api/queue/b4}
+  - {id: b5, label: Button 5, method: POST, path: /api/queue/b5}
+  - {id: b6, label: Button 6, method: POST, path: /api/queue/b6}
+  - {id: b7, label: Button 7, method: POST, path: /api/queue/b7}
+  - {id: b8, label: Button 8, method: POST, path: /api/queue/b8}
+  - {id: b9, label: Button 9, method: POST, path: /api/queue/b9}
+  - {id: b10, label: Button 10, method: POST, path: /api/queue/b10}
+demo:
+  q: {count: 3}

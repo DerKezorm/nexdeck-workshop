@@ -25,7 +25,7 @@ BOB = {"id": 202, "login": "bob"}
 
 def sample(folder: str, name: str) -> str:
     # The only text of a secret in the samples is made here, so no scanner takes the repository for a leak.
-    return (SUBMISSIONS / folder / name).read_text(encoding="utf-8").replace("@@SECRET@@", "0123456789abcdef" * 2)
+    return (SUBMISSIONS / folder / name).read_text(encoding="utf-8").replace("@@SECRET@@", "0123456789abcdef" * 2).replace("@@PAD@@", "x" * 61_000)
 
 
 class FakeHub:
