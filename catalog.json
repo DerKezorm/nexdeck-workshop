@@ -1,6 +1,6 @@
 {
   "format": 1,
-  "generated_at": "2026-10-28T11:21:50Z",
+  "generated_at": "2026-10-28T11:25:34Z",
   "entries": [
     {
       "id": "188376159/test-box",
@@ -39,7 +39,7 @@
       "thumbs": 0,
       "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/6",
       "based_on": null,
-      "updated_at": "2026-10-28T11:21:50Z",
+      "updated_at": "2026-10-28T11:25:34Z",
       "removed": null
     },
     {
@@ -55,7 +55,7 @@
         "id": 188376159,
         "login": "DerKezorm"
       },
-      "version": "1.0.0",
+      "version": "1.1.0",
       "min_nexdeck": "0.51.0",
       "category": "downloads",
       "requires": [
@@ -69,7 +69,7 @@
         }
       ],
       "buttons": [],
-      "sha256": "f4c4b8aceb3c4e62d887358d3da29c04102bc2e0f387016720cf45f8c0fd7541",
+      "sha256": "b4875425e58e30d322fff4d7cecd56c6453354df3cedbce6e5a4e9bef2f60d81",
       "files": {
         "definition": "entries/188376159/test-downloads/definition.yaml",
         "readme": "entries/188376159/test-downloads/README.md",
@@ -80,7 +80,45 @@
       "thumbs": 0,
       "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/5",
       "based_on": null,
-      "updated_at": "2026-10-28T11:21:50Z",
+      "updated_at": "2026-10-28T11:25:34Z",
+      "removed": null
+    },
+    {
+      "id": "188376159/test-removed",
+      "type": "card",
+      "slug": "test-removed",
+      "name": "Removed on purpose",
+      "description": "An entry made to be taken out again; it stays in the catalog as removed test data.",
+      "author": {
+        "id": 188376159,
+        "login": "DerKezorm"
+      },
+      "version": "1.0.0",
+      "min_nexdeck": "0.51.0",
+      "category": "other",
+      "requires": [
+        "jsonapi"
+      ],
+      "class": "read",
+      "reads": [
+        {
+          "kind": "jsonapi",
+          "path": "/api/queue"
+        }
+      ],
+      "buttons": [],
+      "sha256": "53abdd498ac1fc917c397ce3d44ccbccdacbfba41817fe9e2a52ce1fa07eda49",
+      "files": {
+        "definition": "entries/188376159/test-removed/definition.yaml",
+        "readme": "entries/188376159/test-removed/README.md",
+        "changelog": "entries/188376159/test-removed/CHANGELOG.md",
+        "light": "entries/188376159/test-removed/preview-light.png",
+        "dark": "entries/188376159/test-removed/preview-dark.png"
+      },
+      "thumbs": 0,
+      "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/13",
+      "based_on": null,
+      "updated_at": "2026-10-28T11:25:34Z",
       "removed": null
     }
   ]

@@ -6,7 +6,7 @@ Shows the torrents of a download client with their progress. A test entry that s
 |---|---|
 | Type | Card |
 | Category | Downloads |
-| Version | 1.0.0 |
+| Version | 1.1.0 |
 | Author | [DerKezorm](https://github.com/DerKezorm) |
 | Reach | read |
 

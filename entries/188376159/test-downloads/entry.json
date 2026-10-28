@@ -4,12 +4,13 @@
   "author_login": "DerKezorm",
   "category": "downloads",
   "based_on": null,
-  "issue": 1,
+  "issue": 10,
   "issues": [
-    1
+    1,
+    10
   ],
   "created_at": "2026-10-28T11:21:50Z",
-  "updated_at": "2026-10-28T11:21:50Z",
+  "updated_at": "2026-10-28T11:25:34Z",
   "removed": null,
   "thumbs": 0,
   "discussion": {
@@ -24,7 +25,7 @@
       "de": "Downloads"
     },
     "description": "Shows the torrents of a download client with their progress. A test entry that stays as test data.",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "min_nexdeck": "0.51.0",
     "requires": [
       "jsonapi"

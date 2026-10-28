@@ -1,0 +1,11 @@
+nexdeck-card: 1
+slug: test-removed
+name: Removed on purpose
+version: 1.0.0
+description: An entry made to be taken out again.
+requires: [jsonapi]
+requests: [{id: q, path: /api/queue}]
+form: value
+value: {path: count, label: Queue, format: number}
+demo:
+  q: {count: 12}
