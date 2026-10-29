@@ -1,0 +1,49 @@
+nexdeck: integration
+short: wallabag
+name: Wallabag
+logo: wallabag
+description: A read-it-later service you host yourself. Signs in with an API client and your account, the way its own apps do.
+category: other
+fields:
+  - name: client_id
+    type: text
+    label: Client ID
+    help: Wallabag > Developer > Create a new client. Use the Client ID shown there.
+    required: true
+  - name: client_secret
+    type: secret
+    label: Client secret
+    help: Shown next to the Client ID.
+    required: true
+  - name: username
+    type: text
+    label: User name
+    required: true
+  - name: password
+    type: secret
+    label: Password
+    required: true
+auth:
+  type: session
+  login: /oauth/v2/token
+  send: form
+  body:
+    grant_type: password
+    client_id: "{client_id}"
+    client_secret: "{client_secret}"
+    username: "{username}"
+    password: "{password}"
+  ticket: {from: json, at: access_token}
+  pass: {as: header, header: Authorization, value: "Bearer {ticket}"}
+test: /api/user.json
+test_expects: json
+reads:
+  - path: /api/entries.json?perPage=10
+    label: Latest entries
+  - path: /api/entries.json?archive=0&perPage=1
+    label: Unread entries
+  - path: /api/tags.json
+    label: Tags
+check: /api/info
+version: {path: /api/info, at: version}
+github: wallabag/wallabag

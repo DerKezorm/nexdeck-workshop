@@ -1,0 +1,25 @@
+nexdeck-card: 1
+slug: immich-library
+name: {en: Library, de: Bibliothek}
+version: 1.0.0
+min_nexdeck: 0.51.0
+description: What is in your Immich library at a glance, the number of photos and videos, how many people use it and how much space it takes. Needs the key of an administrator.
+category: media
+requires: [immich]
+requests:
+  - id: statistics
+    path: /api/server/statistics
+    every: 10m
+form: stats
+stats:
+  - {path: photos, label: {en: Photos, de: Fotos}}
+  - {path: videos, label: {en: Videos, de: Videos}}
+  - {path: "length(usageByUser)", label: {en: People, de: Personen}}
+  - {path: usage, label: {en: Space used, de: Belegt}, format: bytes}
+demo:
+  statistics:
+    photos: 7
+    videos: 4
+    usage: 2684354560
+    usageByUser:
+    - {photos: 7, videos: 4, usage: 2684354560}

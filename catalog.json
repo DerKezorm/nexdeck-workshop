@@ -1,7 +1,125 @@
 {
   "format": 1,
-  "generated_at": "2026-10-28T20:40:38Z",
+  "generated_at": "2026-10-29T00:01:55Z",
   "entries": [
+    {
+      "id": "188376159/immich-library",
+      "type": "card",
+      "slug": "immich-library",
+      "name": {
+        "en": "Library",
+        "de": "Bibliothek"
+      },
+      "description": "Shows what is in your Immich library at a glance: the number of photos and videos, how many people use it and how much space it takes. It needs the API key of an administrator.",
+      "author": {
+        "id": 188376159,
+        "login": "DerKezorm"
+      },
+      "version": "1.0.0",
+      "min_nexdeck": "0.51.0",
+      "category": "media",
+      "requires": [
+        "immich"
+      ],
+      "class": "read",
+      "reads": [
+        {
+          "kind": "immich",
+          "path": "/api/server/statistics"
+        }
+      ],
+      "buttons": [],
+      "sha256": "35bdb283c8007286fb5be713f7fe88319d5f2bcd1e046d8654f5f12a28a959e0",
+      "files": {
+        "definition": "entries/188376159/immich-library/definition.yaml",
+        "readme": "entries/188376159/immich-library/README.md",
+        "changelog": "entries/188376159/immich-library/CHANGELOG.md",
+        "light": "entries/188376159/immich-library/preview-light.png",
+        "dark": "entries/188376159/immich-library/preview-dark.png"
+      },
+      "thumbs": 0,
+      "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/34",
+      "based_on": null,
+      "updated_at": "2026-10-29T00:01:55Z",
+      "removed": null
+    },
+    {
+      "id": "188376159/jellyfin-recently-added",
+      "type": "card",
+      "slug": "jellyfin-recently-added",
+      "name": {
+        "en": "Recently added",
+        "de": "Neu hinzugekommen"
+      },
+      "description": "Shows the movies and series that were added to your Jellyfin library last, as a row of posters. Every poster has the title and the year underneath.",
+      "author": {
+        "id": 188376159,
+        "login": "DerKezorm"
+      },
+      "version": "1.0.0",
+      "min_nexdeck": "0.51.0",
+      "category": "media",
+      "requires": [
+        "jellyfin"
+      ],
+      "class": "read",
+      "reads": [
+        {
+          "kind": "jellyfin",
+          "path": "/Items?SortBy=DateCreated&SortOrder=Descending&Recursive=true&IncludeItemTypes=Movie%2CSeries&Limit=12&Fields=ProductionYear"
+        }
+      ],
+      "buttons": [],
+      "sha256": "a369c3b277340b7e18bb5c7d5e405f39023660182ca937404ccb6d6ba725055b",
+      "files": {
+        "definition": "entries/188376159/jellyfin-recently-added/definition.yaml",
+        "readme": "entries/188376159/jellyfin-recently-added/README.md",
+        "changelog": "entries/188376159/jellyfin-recently-added/CHANGELOG.md",
+        "light": "entries/188376159/jellyfin-recently-added/preview-light.png",
+        "dark": "entries/188376159/jellyfin-recently-added/preview-dark.png"
+      },
+      "thumbs": 0,
+      "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/32",
+      "based_on": null,
+      "updated_at": "2026-10-29T00:01:55Z",
+      "removed": null
+    },
+    {
+      "id": "188376159/nocodb",
+      "type": "integration",
+      "slug": "nocodb",
+      "name": "NocoDB",
+      "description": "Connects nexdeck to NocoDB, the spreadsheet-like front end for databases. It uses an API token that is sent in the header xc-token, so there is no sign-in to keep. Your cards can then read the bases and, with a path, the rows of a table.",
+      "author": {
+        "id": 188376159,
+        "login": "DerKezorm"
+      },
+      "version": "",
+      "min_nexdeck": "0.51.0",
+      "category": "other",
+      "requires": [],
+      "class": "read",
+      "reads": [
+        {
+          "kind": "custom:nocodb",
+          "path": "/api/v2/meta/bases"
+        }
+      ],
+      "buttons": [],
+      "sha256": "6307cb99d1abc7227473f9dde9090d61936974eb78438e76a96714e5e31f9935",
+      "files": {
+        "definition": "entries/188376159/nocodb/definition.yaml",
+        "readme": "entries/188376159/nocodb/README.md",
+        "changelog": "entries/188376159/nocodb/CHANGELOG.md",
+        "light": "entries/188376159/nocodb/preview-light.png",
+        "dark": "entries/188376159/nocodb/preview-dark.png"
+      },
+      "thumbs": 0,
+      "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/29",
+      "based_on": null,
+      "updated_at": "2026-10-29T00:01:55Z",
+      "removed": null
+    },
     {
       "id": "188376159/pocket-id",
       "type": "card",
@@ -41,6 +159,181 @@
       "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/17",
       "based_on": null,
       "updated_at": "2026-10-28T20:40:38Z",
+      "removed": null
+    },
+    {
+      "id": "188376159/qbittorrent-active-downloads",
+      "type": "card",
+      "slug": "qbittorrent-active-downloads",
+      "name": {
+        "en": "Active downloads",
+        "de": "Aktive Downloads"
+      },
+      "description": "Shows the torrents that qBittorrent is downloading right now, with their progress and speed. Every row has a Pause button that stops that torrent. The button needs qBittorrent 5.0 or newer.",
+      "author": {
+        "id": 188376159,
+        "login": "DerKezorm"
+      },
+      "version": "1.0.0",
+      "min_nexdeck": "0.51.0",
+      "category": "downloads",
+      "requires": [
+        "qbittorrent"
+      ],
+      "class": "buttons",
+      "reads": [
+        {
+          "kind": "qbittorrent",
+          "path": "/api/v2/torrents/info?filter=downloading"
+        }
+      ],
+      "buttons": [
+        {
+          "label": "Pause",
+          "method": "POST",
+          "path": "/api/v2/torrents/stop"
+        }
+      ],
+      "sha256": "c75430c208ef0de4f496671ebfa25240010ada70f613fd087a97638d65bad3ce",
+      "files": {
+        "definition": "entries/188376159/qbittorrent-active-downloads/definition.yaml",
+        "readme": "entries/188376159/qbittorrent-active-downloads/README.md",
+        "changelog": "entries/188376159/qbittorrent-active-downloads/CHANGELOG.md",
+        "light": "entries/188376159/qbittorrent-active-downloads/preview-light.png",
+        "dark": "entries/188376159/qbittorrent-active-downloads/preview-dark.png"
+      },
+      "thumbs": 0,
+      "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/33",
+      "based_on": null,
+      "updated_at": "2026-10-29T00:01:55Z",
+      "removed": null
+    },
+    {
+      "id": "188376159/radarr-missing",
+      "type": "card",
+      "slug": "radarr-missing",
+      "name": {
+        "en": "Missing movies",
+        "de": "Fehlende Filme"
+      },
+      "description": "Shows how many of the movies in your Radarr library are monitored but still missing. The card turns yellow as soon as at least one movie is missing.",
+      "author": {
+        "id": 188376159,
+        "login": "DerKezorm"
+      },
+      "version": "1.0.0",
+      "min_nexdeck": "0.51.0",
+      "category": "media",
+      "requires": [
+        "radarr"
+      ],
+      "class": "read",
+      "reads": [
+        {
+          "kind": "radarr",
+          "path": "/api/v3/wanted/missing?pageSize=1"
+        }
+      ],
+      "buttons": [],
+      "sha256": "5270cfb73346e5b7bdb2ab4009ae322ef46b69717187d76cc93f0c75b6f52dd0",
+      "files": {
+        "definition": "entries/188376159/radarr-missing/definition.yaml",
+        "readme": "entries/188376159/radarr-missing/README.md",
+        "changelog": "entries/188376159/radarr-missing/CHANGELOG.md",
+        "light": "entries/188376159/radarr-missing/preview-light.png",
+        "dark": "entries/188376159/radarr-missing/preview-dark.png"
+      },
+      "thumbs": 0,
+      "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/31",
+      "based_on": null,
+      "updated_at": "2026-10-29T00:01:55Z",
+      "removed": null
+    },
+    {
+      "id": "188376159/shiori",
+      "type": "integration",
+      "slug": "shiori",
+      "name": "Shiori",
+      "description": "Connects nexdeck to Shiori, a simple bookmarks manager you host yourself. It signs in with your account and keeps the session. Your cards can then read the latest bookmarks and the tags.",
+      "author": {
+        "id": 188376159,
+        "login": "DerKezorm"
+      },
+      "version": "",
+      "min_nexdeck": "0.51.0",
+      "category": "other",
+      "requires": [],
+      "class": "login",
+      "reads": [
+        {
+          "kind": "custom:shiori",
+          "path": "/api/bookmarks"
+        },
+        {
+          "kind": "custom:shiori",
+          "path": "/api/v1/tags"
+        }
+      ],
+      "buttons": [],
+      "sha256": "a20e0c3f9fb3f73cdc2095c45b53e7fd16a5e167795c8e0644d47e6b7a79e291",
+      "files": {
+        "definition": "entries/188376159/shiori/definition.yaml",
+        "readme": "entries/188376159/shiori/README.md",
+        "changelog": "entries/188376159/shiori/CHANGELOG.md",
+        "light": "entries/188376159/shiori/preview-light.png",
+        "dark": "entries/188376159/shiori/preview-dark.png"
+      },
+      "thumbs": 0,
+      "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/28",
+      "based_on": null,
+      "updated_at": "2026-10-29T00:01:55Z",
+      "removed": null
+    },
+    {
+      "id": "188376159/sonarr-next-episodes",
+      "type": "card",
+      "slug": "sonarr-next-episodes",
+      "name": {
+        "en": "Next episodes",
+        "de": "Nächste Folgen"
+      },
+      "description": "Shows the episodes of your Sonarr series that air in the next days, in the order of the Sonarr calendar. Every row has a Search button that asks Sonarr to look for that episode right away.",
+      "author": {
+        "id": 188376159,
+        "login": "DerKezorm"
+      },
+      "version": "1.0.0",
+      "min_nexdeck": "0.51.0",
+      "category": "media",
+      "requires": [
+        "sonarr"
+      ],
+      "class": "buttons",
+      "reads": [
+        {
+          "kind": "sonarr",
+          "path": "/api/v3/calendar?includeSeries=true&unmonitored=false"
+        }
+      ],
+      "buttons": [
+        {
+          "label": "Search",
+          "method": "POST",
+          "path": "/api/v3/command"
+        }
+      ],
+      "sha256": "bbd36cac84f168deeca59b939aa6c2807e9c4c0c367c7893a822d9c4c38d9fdb",
+      "files": {
+        "definition": "entries/188376159/sonarr-next-episodes/definition.yaml",
+        "readme": "entries/188376159/sonarr-next-episodes/README.md",
+        "changelog": "entries/188376159/sonarr-next-episodes/CHANGELOG.md",
+        "light": "entries/188376159/sonarr-next-episodes/preview-light.png",
+        "dark": "entries/188376159/sonarr-next-episodes/preview-dark.png"
+      },
+      "thumbs": 0,
+      "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/30",
+      "based_on": null,
+      "updated_at": "2026-10-29T00:01:55Z",
       "removed": null
     },
     {
@@ -206,6 +499,50 @@
         "reason": "Test of the removal: this entry only exists to be taken out again.",
         "at": "2026-10-28T11:27:06Z"
       }
+    },
+    {
+      "id": "188376159/wallabag",
+      "type": "integration",
+      "slug": "wallabag",
+      "name": "Wallabag",
+      "description": "Connects nexdeck to Wallabag, the read-it-later service you host yourself. It signs in with the API client and the account of the Wallabag user, the way the apps of Wallabag do, and keeps the session. Your cards can then read the entries and the tags.",
+      "author": {
+        "id": 188376159,
+        "login": "DerKezorm"
+      },
+      "version": "",
+      "min_nexdeck": "0.51.0",
+      "category": "other",
+      "requires": [],
+      "class": "login",
+      "reads": [
+        {
+          "kind": "custom:wallabag",
+          "path": "/api/entries.json?perPage=10"
+        },
+        {
+          "kind": "custom:wallabag",
+          "path": "/api/entries.json?archive=0&perPage=1"
+        },
+        {
+          "kind": "custom:wallabag",
+          "path": "/api/tags.json"
+        }
+      ],
+      "buttons": [],
+      "sha256": "616532f321fe19344f5f7dfde7466bc5ab886fdad4e98fa87609f41685801fdd",
+      "files": {
+        "definition": "entries/188376159/wallabag/definition.yaml",
+        "readme": "entries/188376159/wallabag/README.md",
+        "changelog": "entries/188376159/wallabag/CHANGELOG.md",
+        "light": "entries/188376159/wallabag/preview-light.png",
+        "dark": "entries/188376159/wallabag/preview-dark.png"
+      },
+      "thumbs": 0,
+      "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/27",
+      "based_on": null,
+      "updated_at": "2026-10-29T00:01:55Z",
+      "removed": null
     }
   ]
 }

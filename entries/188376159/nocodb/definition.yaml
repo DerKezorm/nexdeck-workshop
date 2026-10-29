@@ -1,0 +1,24 @@
+nexdeck: integration
+short: nocodb
+name: NocoDB
+logo: nocodb
+description: A spreadsheet-like front end for databases. Uses an API token that is sent in the header xc-token.
+category: other
+fields:
+  - name: token
+    type: secret
+    label: API token
+    help: Team and Settings > Tokens > Add new token.
+    required: true
+auth:
+  type: header
+  header: xc-token
+  value: "{token}"
+test: /api/v2/meta/bases
+test_expects: json
+reads:
+  - path: /api/v2/meta/bases
+    label: Bases
+check: /api/v1/health
+version: {path: /api/v1/version, at: currentVersion}
+github: nocodb/nocodb

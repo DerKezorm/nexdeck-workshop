@@ -1,0 +1,44 @@
+{
+  "type": "integration",
+  "author_id": 188376159,
+  "author_login": "DerKezorm",
+  "category": "other",
+  "based_on": null,
+  "issue": 19,
+  "issues": [
+    19
+  ],
+  "created_at": "2026-10-29T00:01:55Z",
+  "updated_at": "2026-10-29T00:01:55Z",
+  "removed": null,
+  "thumbs": 0,
+  "discussion": {
+    "id": "D_kwDOVaX69s4AqnoZ",
+    "url": "https://github.com/DerKezorm/nexdeck-workshop/discussions/27"
+  },
+  "test": false,
+  "meta": {
+    "slug": "wallabag",
+    "name": "Wallabag",
+    "description": "Connects nexdeck to Wallabag, the read-it-later service you host yourself. It signs in with the API client and the account of the Wallabag user, the way the apps of Wallabag do, and keeps the session. Your cards can then read the entries and the tags.",
+    "version": "",
+    "min_nexdeck": "0.51.0",
+    "requires": [],
+    "class": "login",
+    "reads": [
+      {
+        "kind": "custom:wallabag",
+        "path": "/api/entries.json?perPage=10"
+      },
+      {
+        "kind": "custom:wallabag",
+        "path": "/api/entries.json?archive=0&perPage=1"
+      },
+      {
+        "kind": "custom:wallabag",
+        "path": "/api/tags.json"
+      }
+    ],
+    "buttons": []
+  }
+}

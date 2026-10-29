@@ -1,0 +1,30 @@
+nexdeck-card: 1
+slug: jellyfin-recently-added
+name: {en: Recently added, de: Neu hinzugekommen}
+version: 1.0.0
+min_nexdeck: 0.51.0
+description: The movies and series that were added to your Jellyfin library last, shown as a row of posters.
+category: media
+requires: [jellyfin]
+requests:
+  - id: latest
+    path: /Items?SortBy=DateCreated&SortOrder=Descending&Recursive=true&IncludeItemTypes=Movie%2CSeries&Limit=12&Fields=ProductionYear
+    every: 5m
+form: posters
+rows:
+  select: Items
+  limit: 12
+item:
+  image: {template: "/Items/{Id}/Images/Primary?maxWidth=300"}
+  title: Name
+  subtitle: ProductionYear
+empty: {en: Nothing was added yet, de: Noch nichts hinzugekommen}
+demo:
+  latest:
+    Items:
+    - {Name: Pebble Cobalt, Id: 4ff84a86b0dd8227bd0e2d62181c1a91, ProductionYear: 2024}
+    - {Name: Mountain Pebble, Id: cf5aac730b39780b02949ae9821344dd, ProductionYear: 2023}
+    - {Name: Field Orbital, Id: 29563d4ad1003972280bf5956c4de032, ProductionYear: 2023}
+    - {Name: Midnight Umber Sky, Id: 22ab326d23ff7b7a50e482ab9b447f0a, ProductionYear: 2022}
+    - {Name: River Kestrel, Id: 41f4e5fd9af11bd951ec98293853efb4, ProductionYear: 2021}
+    - {Name: Nightshift Kestrel, Id: 62d6b06a0816bea71bcf3a109a0e9041, ProductionYear: 2019}

@@ -24,6 +24,30 @@ Every submission is published under the [MIT License](LICENSE).
 
 ### Media
 
+#### [Library](entries/188376159/immich-library)
+
+Card, version 1.0.0, reach: read, by [DerKezorm](https://github.com/DerKezorm), 0 thumbs up
+
+Shows what is in your Immich library at a glance: the number of photos and videos, how many people use it and how much space it takes. It needs the API key of an administrator.
+
+![Preview, light](entries/188376159/immich-library/preview-light.png#gh-light-mode-only)![Preview, dark](entries/188376159/immich-library/preview-dark.png#gh-dark-mode-only)
+
+#### [Missing movies](entries/188376159/radarr-missing)
+
+Card, version 1.0.0, reach: read, by [DerKezorm](https://github.com/DerKezorm), 0 thumbs up
+
+Shows how many of the movies in your Radarr library are monitored but still missing. The card turns yellow as soon as at least one movie is missing.
+
+![Preview, light](entries/188376159/radarr-missing/preview-light.png#gh-light-mode-only)![Preview, dark](entries/188376159/radarr-missing/preview-dark.png#gh-dark-mode-only)
+
+#### [Next episodes](entries/188376159/sonarr-next-episodes)
+
+Card, version 1.0.0, reach: buttons, by [DerKezorm](https://github.com/DerKezorm), 0 thumbs up
+
+Shows the episodes of your Sonarr series that air in the next days, in the order of the Sonarr calendar. Every row has a Search button that asks Sonarr to look for that episode right away.
+
+![Preview, light](entries/188376159/sonarr-next-episodes/preview-light.png#gh-light-mode-only)![Preview, dark](entries/188376159/sonarr-next-episodes/preview-dark.png#gh-dark-mode-only)
+
 #### [Queue size](entries/188376159/test-queue-size) (test)
 
 Card, version 1.0.0, reach: read, by [DerKezorm](https://github.com/DerKezorm), 0 thumbs up
@@ -32,7 +56,23 @@ A test entry for the run of the correction: shows how many items wait.
 
 ![Preview, light](entries/188376159/test-queue-size/preview-light.png#gh-light-mode-only)![Preview, dark](entries/188376159/test-queue-size/preview-dark.png#gh-dark-mode-only)
 
+#### [Recently added](entries/188376159/jellyfin-recently-added)
+
+Card, version 1.0.0, reach: read, by [DerKezorm](https://github.com/DerKezorm), 0 thumbs up
+
+Shows the movies and series that were added to your Jellyfin library last, as a row of posters. Every poster has the title and the year underneath.
+
+![Preview, light](entries/188376159/jellyfin-recently-added/preview-light.png#gh-light-mode-only)![Preview, dark](entries/188376159/jellyfin-recently-added/preview-dark.png#gh-dark-mode-only)
+
 ### Downloads
+
+#### [Active downloads](entries/188376159/qbittorrent-active-downloads)
+
+Card, version 1.0.0, reach: buttons, by [DerKezorm](https://github.com/DerKezorm), 0 thumbs up
+
+Shows the torrents that qBittorrent is downloading right now, with their progress and speed. Every row has a Pause button that stops that torrent. The button needs qBittorrent 5.0 or newer.
+
+![Preview, light](entries/188376159/qbittorrent-active-downloads/preview-light.png#gh-light-mode-only)![Preview, dark](entries/188376159/qbittorrent-active-downloads/preview-dark.png#gh-dark-mode-only)
 
 #### [Downloads](entries/188376159/test-downloads) (test)
 
@@ -61,6 +101,30 @@ Connection, version -, reach: login, by [DerKezorm](https://github.com/DerKezorm
 A made-up connection that signs in with a user name and a password. A test entry that stays as test data.
 
 ![Preview, light](entries/188376159/test-box/preview-light.png#gh-light-mode-only)![Preview, dark](entries/188376159/test-box/preview-dark.png#gh-dark-mode-only)
+
+#### [NocoDB](entries/188376159/nocodb)
+
+Connection, version -, reach: read, by [DerKezorm](https://github.com/DerKezorm), 0 thumbs up
+
+Connects nexdeck to NocoDB, the spreadsheet-like front end for databases. It uses an API token that is sent in the header xc-token, so there is no sign-in to keep. Your cards can then read the bases and, with a path, the rows of a table.
+
+![Preview, light](entries/188376159/nocodb/preview-light.png#gh-light-mode-only)![Preview, dark](entries/188376159/nocodb/preview-dark.png#gh-dark-mode-only)
+
+#### [Shiori](entries/188376159/shiori)
+
+Connection, version -, reach: login, by [DerKezorm](https://github.com/DerKezorm), 0 thumbs up
+
+Connects nexdeck to Shiori, a simple bookmarks manager you host yourself. It signs in with your account and keeps the session. Your cards can then read the latest bookmarks and the tags.
+
+![Preview, light](entries/188376159/shiori/preview-light.png#gh-light-mode-only)![Preview, dark](entries/188376159/shiori/preview-dark.png#gh-dark-mode-only)
+
+#### [Wallabag](entries/188376159/wallabag)
+
+Connection, version -, reach: login, by [DerKezorm](https://github.com/DerKezorm), 0 thumbs up
+
+Connects nexdeck to Wallabag, the read-it-later service you host yourself. It signs in with the API client and the account of the Wallabag user, the way the apps of Wallabag do, and keeps the session. Your cards can then read the entries and the tags.
+
+![Preview, light](entries/188376159/wallabag/preview-light.png#gh-light-mode-only)![Preview, dark](entries/188376159/wallabag/preview-dark.png#gh-dark-mode-only)
 
 
 <!-- entries:end -->

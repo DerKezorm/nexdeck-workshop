@@ -1,0 +1,40 @@
+{
+  "type": "integration",
+  "author_id": 188376159,
+  "author_login": "DerKezorm",
+  "category": "other",
+  "based_on": null,
+  "issue": 20,
+  "issues": [
+    20
+  ],
+  "created_at": "2026-10-29T00:01:55Z",
+  "updated_at": "2026-10-29T00:01:55Z",
+  "removed": null,
+  "thumbs": 0,
+  "discussion": {
+    "id": "D_kwDOVaX69s4Aqnoc",
+    "url": "https://github.com/DerKezorm/nexdeck-workshop/discussions/28"
+  },
+  "test": false,
+  "meta": {
+    "slug": "shiori",
+    "name": "Shiori",
+    "description": "Connects nexdeck to Shiori, a simple bookmarks manager you host yourself. It signs in with your account and keeps the session. Your cards can then read the latest bookmarks and the tags.",
+    "version": "",
+    "min_nexdeck": "0.51.0",
+    "requires": [],
+    "class": "login",
+    "reads": [
+      {
+        "kind": "custom:shiori",
+        "path": "/api/bookmarks"
+      },
+      {
+        "kind": "custom:shiori",
+        "path": "/api/v1/tags"
+      }
+    ],
+    "buttons": []
+  }
+}

@@ -1,0 +1,45 @@
+nexdeck-card: 1
+slug: sonarr-next-episodes
+name: {en: Next episodes, de: Nächste Folgen}
+version: 1.0.0
+min_nexdeck: 0.51.0
+description: The episodes of your Sonarr series that air in the next days, as the calendar of Sonarr lists them. Every row has a Search button that asks Sonarr to look for that episode.
+category: media
+requires: [sonarr]
+requests:
+  - id: calendar
+    path: /api/v3/calendar?includeSeries=true&unmonitored=false
+form: list
+rows:
+  select: "@"
+  sort: {field: airDateUtc}
+  limit: 10
+item:
+  title: series.title
+  subtitle: {template: "S{seasonNumber}E{episodeNumber} {title}"}
+  value: {path: airDateUtc, format: datetime}
+empty: {en: Nothing airs soon, de: Bald läuft nichts}
+buttons:
+  - id: search
+    label: {en: Search, de: Suchen}
+    icon: search
+    where: row
+    method: POST
+    path: /api/v3/command
+    body:
+      name: EpisodeSearch
+      episodeIds: ["{id}"]
+demo:
+  calendar:
+  - seasonNumber: 9
+    episodeNumber: 3
+    title: Zephyr Paper
+    airDateUtc: '2025-11-26T00:06:00Z'
+    series: {title: Mountain Marble, id: 5}
+    id: 821
+  - seasonNumber: 30
+    episodeNumber: 3
+    title: Garden Static Flint Sky Velvet
+    airDateUtc: '2025-11-26T01:36:00Z'
+    series: {title: Cedar Lantern, id: 4}
+    id: 697

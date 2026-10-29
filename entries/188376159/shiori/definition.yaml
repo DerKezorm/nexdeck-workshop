@@ -1,0 +1,31 @@
+nexdeck: integration
+short: shiori
+name: Shiori
+logo: shiori
+description: A simple bookmarks manager you host yourself. Signs in with your account and keeps the session.
+category: other
+fields:
+  - name: username
+    type: text
+    label: User name
+    required: true
+  - name: password
+    type: secret
+    label: Password
+    required: true
+auth:
+  type: session
+  login: /api/v1/auth/login
+  send: json
+  body: {username: "{username}", password: "{password}"}
+  ticket: {from: json, at: message.token}
+  pass: {as: header, header: Authorization, value: "Bearer {ticket}"}
+test: /api/v1/auth/me
+test_expects: json
+reads:
+  - path: /api/bookmarks
+    label: Latest bookmarks
+  - path: /api/v1/tags
+    label: Tags
+version: {path: /api/v1/system/info, at: message.version.tag}
+github: go-shiori/shiori

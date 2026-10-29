@@ -1,0 +1,21 @@
+nexdeck-card: 1
+slug: radarr-missing
+name: {en: Missing movies, de: Fehlende Filme}
+version: 1.0.0
+min_nexdeck: 0.51.0
+description: How many monitored movies Radarr is still missing. The card turns yellow as soon as there is at least one.
+category: media
+requires: [radarr]
+requests:
+  - id: missing
+    path: /api/v3/wanted/missing?pageSize=1
+    every: 5m
+form: value
+value:
+  path: totalRecords
+  label: {en: Missing, de: Fehlend}
+  unit: {en: movies, de: Filme}
+  rules:
+    - {op: ">", than: 0, then: warn}
+demo:
+  missing: {pageSize: 4, totalRecords: 4}

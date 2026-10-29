@@ -1,0 +1,35 @@
+nexdeck-card: 1
+slug: qbittorrent-active-downloads
+name: {en: Active downloads, de: Aktive Downloads}
+version: 1.0.0
+min_nexdeck: 0.51.0
+description: The torrents qBittorrent is downloading right now, with their progress and speed. Every row has a Pause button. The button needs qBittorrent 5.0 or newer, which calls this action stop.
+category: downloads
+requires: [qbittorrent]
+requests:
+  - id: downloading
+    path: /api/v2/torrents/info?filter=downloading
+form: list
+rows:
+  select: "@"
+  sort: {field: progress, desc: true}
+  limit: 10
+item:
+  title: name
+  subtitle: {path: dlspeed, format: rate}
+  value: {formula: "{progress} * 100", format: percent, digits: 1}
+empty: {en: No active downloads, de: Keine aktiven Downloads}
+buttons:
+  - id: pause
+    label: {en: Pause, de: Pausieren}
+    icon: pause
+    where: row
+    method: POST
+    path: /api/v2/torrents/stop
+    send: form
+    body: {hashes: "{hash}"}
+demo:
+  downloading:
+  - {dlspeed: 4800000, hash: c965186459aa2496714e832f4d160f2b49ccd3e0, name: nectar-ridge-95.8.4-sky17-orbital.nightshift, progress: 0.62}
+  - {dlspeed: 2200000, hash: 5c5450cfd6d322768506d7e5d63eef3bb6fd0926, name: nectar-95.8.4-sky17-orbital.nightshift, progress: 0.35}
+  - {dlspeed: 640000, hash: 4fa46f003ab326f9292d8e329a7946197964c9dc, name: nectar-saltwater-95.8.4-sky17-orbital.nightshift, progress: 0.08}
