@@ -1,6 +1,6 @@
 {
   "format": 1,
-  "generated_at": "2026-10-29T10:32:26Z",
+  "generated_at": "2026-10-29T14:41:41Z",
   "entries": [
     {
       "id": "188376159/immich-library",
@@ -122,48 +122,6 @@
       "updated_at": "2026-10-29T00:01:55Z",
       "removed": null,
       "starter": true
-    },
-    {
-      "id": "188376159/pocket-id",
-      "type": "card",
-      "slug": "pocket-id",
-      "name": {
-        "en": "Admin count",
-        "de": "Anzahl Admins"
-      },
-      "description": "Shows how many administrators your Pocket ID has.",
-      "author": {
-        "id": 188376159,
-        "login": "DerKezorm"
-      },
-      "version": "1.0.1",
-      "min_nexdeck": "0.51.0",
-      "category": "server",
-      "requires": [
-        "pocketid"
-      ],
-      "class": "read",
-      "reads": [
-        {
-          "kind": "pocketid",
-          "path": "/api/users?pagination%5Blimit%5D=100"
-        }
-      ],
-      "buttons": [],
-      "sha256": "e7b9d478557d7b8d4e2b8a2f1d7eea043a6830e8d941477edc3ec4b3ed27b411",
-      "files": {
-        "definition": "entries/188376159/pocket-id/definition.yaml",
-        "readme": "entries/188376159/pocket-id/README.md",
-        "changelog": "entries/188376159/pocket-id/CHANGELOG.md",
-        "light": "entries/188376159/pocket-id/preview-light.png",
-        "dark": "entries/188376159/pocket-id/preview-dark.png"
-      },
-      "thumbs": 0,
-      "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/17",
-      "based_on": null,
-      "updated_at": "2026-10-28T20:40:38Z",
-      "removed": null,
-      "starter": false
     },
     {
       "id": "188376159/qbittorrent-active-downloads",
