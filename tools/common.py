@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import re
 from datetime import UTC, datetime
@@ -50,19 +51,27 @@ def describes(text: str) -> bool:
     )
 
 
-#: Parts of a key in demo data that say its value grants access, upper or lower case, wherever they stand (the list nexdeck
-#: uses before sharing). A value under such a key that is not empty, null or a placeholder is a secret.
-ACCESS_KEYS = (
-    "apikey", "api_key", "token", "secret", "password", "passwd", "authorization", "cookie", "session", "private_key",
-    "client_secret", "access_key",
-)
+#: The one rule of nexdeck for a name whose value grants access (``credential_names.is_access_name``), taken from the kit so
+#: that it is the rule of the nexdeck the kit comes from: every spelling (``X-Api-Key``, ``privateKey``, ``pwd``), not a word
+#: that only says who asks. A list of its own let such names past (found in a real run on nexdeck 1.0.1).
+_NAMES = ROOT / "kit" / "nexdeck_kit" / "credential_names.py"
+
+
+def _credential_names() -> Any:
+    spec = importlib.util.spec_from_file_location("nexdeck_kit_credential_names", _NAMES)
+    assert spec is not None and spec.loader is not None, _NAMES
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+CREDENTIAL_NAMES = _credential_names()
 SECRET_IN_DEMO = 'The demo data hold a key or a password at {place} (key {key}). Replace it with "[hidden]" or a made-up value.'
 _DOTS = re.compile(r"[.…•*]+")
 
 
 def access_key(key: str) -> bool:
-    lowered = key.lower()
-    return any(part in lowered for part in ACCESS_KEYS)
+    return bool(CREDENTIAL_NAMES.is_access_name(key))
 
 
 def placeholder(text: str) -> bool:

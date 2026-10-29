@@ -8,7 +8,7 @@ from typing import Any
 import pytest
 
 from tests.conftest import ALICE, FakeHub, form_body, run, sample
-from tools.common import demo_secrets
+from tools.common import ROOT, demo_secrets
 
 VALUE = sample("good", "value-card.yaml")
 SECRET = "0123456789abcdef" * 2
@@ -45,3 +45,18 @@ def test_karten8s_s3_a_placeholder_under_such_a_key_is_taken(ctx: Any, hub: Fake
 )
 def test_karten8s_s3_the_keys_of_the_list_count_in_any_case_and_as_a_part(key: str) -> None:
     assert demo_secrets({"a": {key: "abc", "list": [{key: 5}], "title": "secret plans", "monkey": "x"}}) == [(f"demo.a.{key}", key), (f"demo.a.list[0].{key}", key)]
+
+
+@pytest.mark.parametrize("key", ["X-Api-Key", "privateKey", "accessKey", "passphrase", "pwd", "auth", "Api Key"])
+def test_karten8t_b8_a_credential_spelled_otherwise_is_found_in_demo_data(key: str) -> None:
+    assert demo_secrets({"a": {key: "k7Hq2pLw9Z0a", "title": "Dune"}}) == [(f"demo.a.{key}", key)]
+
+
+@pytest.mark.parametrize("key", ["userName", "login", "title", "monkey", "keyword", "author"])
+def test_karten8t_b8_names_that_only_say_who_asks_or_hold_no_credential_stay(key: str) -> None:
+    assert demo_secrets({"a": {key: "someone"}}) == []
+
+
+def test_karten8t_b8_the_rule_is_the_one_of_the_kit() -> None:
+    assert (ROOT / "kit" / "nexdeck_kit" / "credential_names.py").is_file()
+    assert "def is_access_name" in (ROOT / "kit" / "nexdeck_kit" / "credential_names.py").read_text(encoding="utf-8")
