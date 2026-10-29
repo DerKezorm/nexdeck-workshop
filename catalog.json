@@ -1,6 +1,6 @@
 {
   "format": 1,
-  "generated_at": "2026-10-29T00:01:55Z",
+  "generated_at": "2026-10-29T00:38:43Z",
   "entries": [
     {
       "id": "188376159/immich-library",
@@ -56,7 +56,7 @@
         "id": 188376159,
         "login": "DerKezorm"
       },
-      "version": "1.0.0",
+      "version": "1.0.1",
       "min_nexdeck": "0.51.0",
       "category": "media",
       "requires": [
@@ -70,7 +70,7 @@
         }
       ],
       "buttons": [],
-      "sha256": "a369c3b277340b7e18bb5c7d5e405f39023660182ca937404ccb6d6ba725055b",
+      "sha256": "03baad2612a67b6761f04469d771cbf49fb5a8cab9cb7c4bbfdc44640f7fa4ce",
       "files": {
         "definition": "entries/188376159/jellyfin-recently-added/definition.yaml",
         "readme": "entries/188376159/jellyfin-recently-added/README.md",
@@ -81,7 +81,7 @@
       "thumbs": 0,
       "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/32",
       "based_on": null,
-      "updated_at": "2026-10-29T00:01:55Z",
+      "updated_at": "2026-10-29T00:38:43Z",
       "removed": null
     },
     {
@@ -297,12 +297,12 @@
         "en": "Next episodes",
         "de": "Nächste Folgen"
       },
-      "description": "Shows the episodes of your Sonarr series that air in the next days, in the order of the Sonarr calendar. Every row has a Search button that asks Sonarr to look for that episode right away.",
+      "description": "Shows the series of your Sonarr library that have an episode coming, with the day it airs, the nearest first. Every row has a button that asks Sonarr to search the missing episodes of that series.",
       "author": {
         "id": 188376159,
         "login": "DerKezorm"
       },
-      "version": "1.0.0",
+      "version": "1.0.1",
       "min_nexdeck": "0.51.0",
       "category": "media",
       "requires": [
@@ -312,17 +312,17 @@
       "reads": [
         {
           "kind": "sonarr",
-          "path": "/api/v3/calendar?includeSeries=true&unmonitored=false"
+          "path": "/api/v3/series"
         }
       ],
       "buttons": [
         {
-          "label": "Search",
+          "label": "Search missing",
           "method": "POST",
           "path": "/api/v3/command"
         }
       ],
-      "sha256": "bbd36cac84f168deeca59b939aa6c2807e9c4c0c367c7893a822d9c4c38d9fdb",
+      "sha256": "815ad91d60d02e5bc66b59682e10708ea66620b11a8eaef26d79d3e5d70e2801",
       "files": {
         "definition": "entries/188376159/sonarr-next-episodes/definition.yaml",
         "readme": "entries/188376159/sonarr-next-episodes/README.md",
@@ -333,7 +333,7 @@
       "thumbs": 0,
       "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/30",
       "based_on": null,
-      "updated_at": "2026-10-29T00:01:55Z",
+      "updated_at": "2026-10-29T00:38:43Z",
       "removed": null
     },
     {

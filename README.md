@@ -42,9 +42,9 @@ Shows how many of the movies in your Radarr library are monitored but still miss
 
 #### [Next episodes](entries/188376159/sonarr-next-episodes)
 
-Card, version 1.0.0, reach: buttons, by [DerKezorm](https://github.com/DerKezorm), 0 thumbs up
+Card, version 1.0.1, reach: buttons, by [DerKezorm](https://github.com/DerKezorm), 0 thumbs up
 
-Shows the episodes of your Sonarr series that air in the next days, in the order of the Sonarr calendar. Every row has a Search button that asks Sonarr to look for that episode right away.
+Shows the series of your Sonarr library that have an episode coming, with the day it airs, the nearest first. Every row has a button that asks Sonarr to search the missing episodes of that series.
 
 ![Preview, light](entries/188376159/sonarr-next-episodes/preview-light.png#gh-light-mode-only)![Preview, dark](entries/188376159/sonarr-next-episodes/preview-dark.png#gh-dark-mode-only)
 
@@ -58,7 +58,7 @@ A test entry for the run of the correction: shows how many items wait.
 
 #### [Recently added](entries/188376159/jellyfin-recently-added)
 
-Card, version 1.0.0, reach: read, by [DerKezorm](https://github.com/DerKezorm), 0 thumbs up
+Card, version 1.0.1, reach: read, by [DerKezorm](https://github.com/DerKezorm), 0 thumbs up
 
 Shows the movies and series that were added to your Jellyfin library last, as a row of posters. Every poster has the title and the year underneath.
 

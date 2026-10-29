@@ -4,12 +4,13 @@
   "author_login": "DerKezorm",
   "category": "media",
   "based_on": null,
-  "issue": 22,
+  "issue": 35,
   "issues": [
-    22
+    22,
+    35
   ],
   "created_at": "2026-10-29T00:01:55Z",
-  "updated_at": "2026-10-29T00:01:55Z",
+  "updated_at": "2026-10-29T00:38:43Z",
   "removed": null,
   "thumbs": 0,
   "discussion": {
@@ -23,8 +24,8 @@
       "en": "Next episodes",
       "de": "Nächste Folgen"
     },
-    "description": "Shows the episodes of your Sonarr series that air in the next days, in the order of the Sonarr calendar. Every row has a Search button that asks Sonarr to look for that episode right away.",
-    "version": "1.0.0",
+    "description": "Shows the series of your Sonarr library that have an episode coming, with the day it airs, the nearest first. Every row has a button that asks Sonarr to search the missing episodes of that series.",
+    "version": "1.0.1",
     "min_nexdeck": "0.51.0",
     "requires": [
       "sonarr"
@@ -33,12 +34,12 @@
     "reads": [
       {
         "kind": "sonarr",
-        "path": "/api/v3/calendar?includeSeries=true&unmonitored=false"
+        "path": "/api/v3/series"
       }
     ],
     "buttons": [
       {
-        "label": "Search",
+        "label": "Search missing",
         "method": "POST",
         "path": "/api/v3/command"
       }

@@ -6,7 +6,7 @@ Shows the movies and series that were added to your Jellyfin library last, as a 
 |---|---|
 | Type | Card |
 | Category | Media |
-| Version | 1.0.0 |
+| Version | 1.0.1 |
 | Author | [DerKezorm](https://github.com/DerKezorm) |
 | Reach | read |
 

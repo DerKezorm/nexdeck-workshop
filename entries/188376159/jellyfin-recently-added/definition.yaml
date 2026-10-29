@@ -1,7 +1,7 @@
 nexdeck-card: 1
 slug: jellyfin-recently-added
 name: {en: Recently added, de: Neu hinzugekommen}
-version: 1.0.0
+version: 1.0.1
 min_nexdeck: 0.51.0
 description: The movies and series that were added to your Jellyfin library last, shown as a row of posters.
 category: media
@@ -17,7 +17,7 @@ rows:
 item:
   image: {template: "/Items/{Id}/Images/Primary?maxWidth=300"}
   title: Name
-  subtitle: ProductionYear
+  subtitle: {path: ProductionYear, format: text}
 empty: {en: Nothing was added yet, de: Noch nichts hinzugekommen}
 demo:
   latest:

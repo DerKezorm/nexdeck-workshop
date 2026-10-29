@@ -1,45 +1,37 @@
 nexdeck-card: 1
 slug: sonarr-next-episodes
 name: {en: Next episodes, de: Nächste Folgen}
-version: 1.0.0
+version: 1.0.1
 min_nexdeck: 0.51.0
-description: The episodes of your Sonarr series that air in the next days, as the calendar of Sonarr lists them. Every row has a Search button that asks Sonarr to look for that episode.
+description: The series of your Sonarr library that have an episode coming, with the day it airs, the nearest first. Every row has a button that asks Sonarr to search the missing episodes of that series.
 category: media
 requires: [sonarr]
 requests:
-  - id: calendar
-    path: /api/v3/calendar?includeSeries=true&unmonitored=false
+  - id: series
+    path: /api/v3/series
 form: list
 rows:
-  select: "@"
-  sort: {field: airDateUtc}
+  select: "[?nextAiring]"
+  sort: {field: nextAiring}
   limit: 10
 item:
-  title: series.title
-  subtitle: {template: "S{seasonNumber}E{episodeNumber} {title}"}
-  value: {path: airDateUtc, format: datetime}
-empty: {en: Nothing airs soon, de: Bald läuft nichts}
+  title: title
+  subtitle: network
+  value: {path: nextAiring, format: datetime}
+empty: {en: No episode is announced, de: Keine Folge angekündigt}
 buttons:
   - id: search
-    label: {en: Search, de: Suchen}
+    label: {en: Search missing, de: Fehlende suchen}
     icon: search
     where: row
     method: POST
     path: /api/v3/command
     body:
-      name: EpisodeSearch
-      episodeIds: ["{id}"]
+      name: SeriesSearch
+      seriesId: "{id}"
 demo:
-  calendar:
-  - seasonNumber: 9
-    episodeNumber: 3
-    title: Zephyr Paper
-    airDateUtc: '2025-11-26T00:06:00Z'
-    series: {title: Mountain Marble, id: 5}
-    id: 821
-  - seasonNumber: 30
-    episodeNumber: 3
-    title: Garden Static Flint Sky Velvet
-    airDateUtc: '2025-11-26T01:36:00Z'
-    series: {title: Cedar Lantern, id: 4}
-    id: 697
+  series:
+  - {id: 5, title: Mountain Marble, network: Harbor TV, nextAiring: '2026-11-03T01:00:00Z'}
+  - {id: 4, title: Cedar Lantern, network: Northlight, nextAiring: '2026-11-04T02:30:00Z'}
+  - {id: 8, title: Garden Static, network: Harbor TV, nextAiring: '2026-11-10T00:00:00Z'}
+  - {id: 2, title: Velvet Saltwater, network: Northlight, nextAiring: '2026-12-01T20:00:00Z'}
