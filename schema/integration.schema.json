@@ -148,6 +148,38 @@
             }
           ],
           "default": null
+        },
+        "lifetime": {
+          "anyOf": [
+            {
+              "maximum": 31536000,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "$ref": "#/$defs/LifetimeAt"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lifetime"
+        },
+        "renew_on": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Renew On"
         }
       },
       "title": "Auth",
@@ -223,6 +255,29 @@
         "label"
       ],
       "title": "DefinedField",
+      "type": "object"
+    },
+    "LifetimeAt": {
+      "additionalProperties": false,
+      "description": "Where the sign-in answer says how many seconds the ticket holds (``expires_in``): a value of the JSON answer.",
+      "properties": {
+        "from": {
+          "const": "json",
+          "title": "From",
+          "type": "string"
+        },
+        "at": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "from",
+        "at"
+      ],
+      "title": "LifetimeAt",
       "type": "object"
     },
     "PassOn": {

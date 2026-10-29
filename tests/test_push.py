@@ -70,3 +70,47 @@ def test_karten13_b6_a_run_that_changed_nothing_makes_no_commit(clone: Path) -> 
     (clone / "orders" / "1-1.json").unlink()  # an order carried out: its file is gone, and the removal is pushed as well
     assert _push(clone, "Carried out").returncode == 0
     assert "orders/1-1.json" not in _git(clone.parent / "origin.git", "ls-tree", "-r", "--name-only", "main")
+
+
+
+def _other_person_pushes(clone: Path, name: str) -> None:
+    """Somebody pushes to main from another clone, after the run took its checkout."""
+    other = clone.parent / "other"
+    subprocess.run(["git", "clone", "-q", str(clone.parent / "origin.git"), str(other)], check=True)
+    _git(other, "config", "user.name", "someone")
+    _git(other, "config", "user.email", "someone@example.com")
+    (other / name).write_text("from somebody\n", encoding="utf-8")
+    _git(other, "add", name)
+    _git(other, "commit", "-q", "-m", f"Add {name}")
+    _git(other, "push", "-q", "origin", "main")
+
+
+def test_karten8n2_a_run_takes_in_what_was_pushed_since_its_checkout_before_it_pushes(clone: Path) -> None:
+    _other_person_pushes(clone, "CHANGES.md")
+    (clone / "state.json").write_text("{}\n", encoding="utf-8")
+    done = _push(clone)
+    assert done.returncode == 0, done.stderr
+    origin = clone.parent / "origin.git"
+    assert {"CHANGES.md", "state.json"} <= set(_git(origin, "ls-tree", "-r", "--name-only", "main").splitlines())
+    assert _git(origin, "log", "--format=%s", "main").splitlines()[0] == "Update", "the run's commit sits on top of the newest main"
+
+
+def test_karten8n2_a_push_that_is_refused_because_main_moved_is_tried_once_more(clone: Path) -> None:
+    """The first push of the run is refused (a person pushed between the pull and the push); the second works."""
+    origin = clone.parent / "origin.git"
+    hook = origin / "hooks" / "pre-receive"
+    marker = (clone.parent / "refused-once").as_posix()
+    hook.write_text(f'#!/bin/sh\nif [ ! -e "{marker}" ]; then : > "{marker}"; echo "main moved" >&2; exit 1; fi\n', encoding="utf-8", newline="\n")
+    hook.chmod(0o755)
+    (clone / "state.json").write_text("{}\n", encoding="utf-8")
+    done = _push(clone)
+    assert done.returncode == 0, done.stderr
+    assert "state.json" in _git(origin, "ls-tree", "-r", "--name-only", "main").splitlines()
+
+
+def test_karten8n2_a_conflict_stops_the_run_with_an_error_and_pushes_nothing(clone: Path) -> None:
+    _other_person_pushes(clone, "state.json")
+    (clone / "state.json").write_text("{}\n", encoding="utf-8")
+    done = _push(clone)
+    assert done.returncode != 0
+    assert _git(clone.parent / "origin.git", "show", "main:state.json") == "from somebody"

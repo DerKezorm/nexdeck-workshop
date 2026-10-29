@@ -22,5 +22,9 @@ auth=()
 if [ -n "${GITHUB_TOKEN:-}" ]; then
   auth=(-c "http.https://github.com/.extraheader=AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 | tr -d '\n')")
 fi
-# The runs of the write actions go one after the other, so the push normally just works; a person pushing in between is the one case.
-git "${auth[@]}" push origin "HEAD:$branch" || { git "${auth[@]}" pull --rebase -q origin "$branch" && git "${auth[@]}" push origin "HEAD:$branch"; }
+# The run took the newest main when it started, but a person may have pushed since, and the job that records an order (which has
+# a group of its own) can run beside the others. So the newest main is taken in again before the push, and once more if the push
+# is refused because main moved in between. A conflict stops the run with the error; it is never resolved by guessing.
+update() { git "${auth[@]}" pull --rebase -q origin "$branch"; }
+update
+git "${auth[@]}" push origin "HEAD:$branch" || { update && git "${auth[@]}" push origin "HEAD:$branch"; }

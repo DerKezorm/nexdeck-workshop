@@ -126,3 +126,22 @@ def test_karten13_b6_every_step_that_pushes_has_the_key_because_the_checkout_kee
     assert len(pushing) == 5
     for name, step in pushing:
         assert step["env"]["GITHUB_TOKEN"] == "${{ github.token }}", name
+
+
+def test_karten8n2_every_run_that_writes_takes_the_newest_main_and_not_the_state_of_its_event() -> None:
+    """A run waits in its group; the checkout of an issue event would be the main of the moment the event happened."""
+    steps = [(name, step) for name in NAMES if name != "test" for job in _load(name)["jobs"].values() for step in job["steps"] if str(step.get("uses", "")).startswith("actions/checkout")]
+    assert len(steps) == 5
+    for name, step in steps:
+        assert step["with"].get("ref") == "main", name
+
+
+def test_karten8n2_all_that_write_main_share_one_group_but_the_one_that_must_not_be_dropped() -> None:
+    groups = {}
+    for name in ("submit", "daily", "moderate"):
+        flow = _load(name)
+        for job_name, job in flow["jobs"].items():
+            group = (job.get("concurrency") or flow.get("concurrency") or {})
+            groups[f"{name}/{job_name}"] = (group.get("group"), group.get("cancel-in-progress"))
+    assert groups["submit/submit"] == groups["daily/daily"] == groups["moderate/order"] == groups["moderate/comment"] == ("workshop-write", False)
+    assert groups["moderate/record"][0] != "workshop-write"

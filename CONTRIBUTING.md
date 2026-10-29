@@ -63,3 +63,13 @@ Commands in comments (`/remove`, `/restore`, `/withdraw`, `/recheck`) work the s
 the bot has not marked done (the reply of the bot carries `<!-- workshop:done:<comment id> -->`), so it does not matter which run was started for a comment.
 A removal started by hand (the *moderate* workflow) is first written to `orders/` by a job that is never dropped; every run carries out the
 orders that lie there before it does anything else.
+
+### Why the runs go one after the other, on the newest main
+
+Every action that writes to `main` (`submit`, `daily` and the `order` and `comment` jobs of `moderate`) is in the one group `workshop-write`, with
+`cancel-in-progress: false`: a run that started while another still works waits and is never cancelled. A run that waited must not work on what `main`
+was when its event happened, so every checkout takes `ref: main`, the newest `main` at the moment the run starts. Eight issues opened within a minute
+once made one run fail for exactly that reason: it had checked out the state of its event and met the `state.json` of the run before it.
+`.github/scripts/push.sh` takes in the newest `main` again with `pull --rebase` before it pushes, and once more if the push is refused because `main`
+moved in between (a person pushing, or the job that records an order, which has a group of its own so that it is never dropped). A conflict that is
+left stops the run with the error; it is not resolved by guessing, and the next run finds the work again, since runs work from the state.
