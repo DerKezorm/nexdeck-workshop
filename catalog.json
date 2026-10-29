@@ -1,6 +1,6 @@
 {
   "format": 1,
-  "generated_at": "2026-10-29T01:41:34Z",
+  "generated_at": "2026-10-29T02:15:23Z",
   "entries": [
     {
       "id": "188376159/immich-library",
@@ -41,7 +41,8 @@
       "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/34",
       "based_on": null,
       "updated_at": "2026-10-29T00:01:55Z",
-      "removed": null
+      "removed": null,
+      "starter": true
     },
     {
       "id": "188376159/jellyfin-recently-added",
@@ -82,7 +83,8 @@
       "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/32",
       "based_on": null,
       "updated_at": "2026-10-29T00:38:43Z",
-      "removed": null
+      "removed": null,
+      "starter": true
     },
     {
       "id": "188376159/nocodb",
@@ -118,7 +120,8 @@
       "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/29",
       "based_on": null,
       "updated_at": "2026-10-29T00:01:55Z",
-      "removed": null
+      "removed": null,
+      "starter": true
     },
     {
       "id": "188376159/pocket-id",
@@ -159,7 +162,8 @@
       "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/17",
       "based_on": null,
       "updated_at": "2026-10-28T20:40:38Z",
-      "removed": null
+      "removed": null,
+      "starter": false
     },
     {
       "id": "188376159/qbittorrent-active-downloads",
@@ -206,7 +210,8 @@
       "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/33",
       "based_on": null,
       "updated_at": "2026-10-29T00:01:55Z",
-      "removed": null
+      "removed": null,
+      "starter": true
     },
     {
       "id": "188376159/radarr-missing",
@@ -247,7 +252,8 @@
       "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/31",
       "based_on": null,
       "updated_at": "2026-10-29T00:01:55Z",
-      "removed": null
+      "removed": null,
+      "starter": true
     },
     {
       "id": "188376159/shiori",
@@ -287,7 +293,8 @@
       "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/28",
       "based_on": null,
       "updated_at": "2026-10-29T01:41:34Z",
-      "removed": null
+      "removed": null,
+      "starter": true
     },
     {
       "id": "188376159/sonarr-next-episodes",
@@ -334,7 +341,8 @@
       "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/30",
       "based_on": null,
       "updated_at": "2026-10-29T00:38:43Z",
-      "removed": null
+      "removed": null,
+      "starter": true
     },
     {
       "id": "188376159/test-box",
@@ -374,7 +382,8 @@
       "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/6",
       "based_on": null,
       "updated_at": "2026-10-28T11:25:34Z",
-      "removed": null
+      "removed": null,
+      "starter": false
     },
     {
       "id": "188376159/test-downloads",
@@ -415,7 +424,8 @@
       "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/5",
       "based_on": null,
       "updated_at": "2026-10-28T11:25:34Z",
-      "removed": null
+      "removed": null,
+      "starter": false
     },
     {
       "id": "188376159/test-queue-size",
@@ -456,7 +466,8 @@
       "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/15",
       "based_on": null,
       "updated_at": "2026-10-28T15:42:40Z",
-      "removed": null
+      "removed": null,
+      "starter": false
     },
     {
       "id": "188376159/test-removed",
@@ -498,7 +509,8 @@
         "level": "harmful",
         "reason": "Test of the removal: this entry only exists to be taken out again.",
         "at": "2026-10-28T11:27:06Z"
-      }
+      },
+      "starter": false
     },
     {
       "id": "188376159/wallabag",
@@ -542,7 +554,8 @@
       "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/27",
       "based_on": null,
       "updated_at": "2026-10-29T00:46:17Z",
-      "removed": null
+      "removed": null,
+      "starter": true
     }
   ]
 }

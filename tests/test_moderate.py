@@ -275,7 +275,7 @@ def test_karten13_ac5_the_catalog_says_what_nexdeck_needs_to_know(ctx: Any, hub:
     run(ctx)
     catalog = read_json(root / "catalog.json")
     assert catalog["format"] == 1 and catalog["generated_at"].endswith("Z")
-    keys = {"id", "type", "slug", "name", "description", "author", "version", "min_nexdeck", "category", "requires", "class", "reads", "buttons", "sha256", "files", "thumbs", "discussion", "based_on", "updated_at", "removed"}
+    keys = {"id", "type", "slug", "name", "description", "author", "version", "min_nexdeck", "category", "requires", "class", "reads", "buttons", "sha256", "files", "thumbs", "discussion", "based_on", "updated_at", "removed", "starter"}
     assert len(catalog["entries"]) == 3
     for one in catalog["entries"]:
         assert set(one) == keys

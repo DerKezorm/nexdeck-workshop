@@ -141,3 +141,4 @@ Connects nexdeck to Wallabag, the read-it-later service you host yourself. It si
 | `state.json` | The moment up to which the last run took up issues and comments (made by the actions) |
 | `orders/` | Removals started by hand that no run has carried out yet (made by the actions) |
 | `MAINTAINERS` | The people who can update and remove any entry |
+| `starters.json` | The ids of the entries that nexdeck offers as examples to start from; only maintainers change it |

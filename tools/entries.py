@@ -29,6 +29,8 @@ from .common import (
 )
 
 CATALOG_FORMAT = 1
+#: The list of the entries that are examples to start from; only maintainers change it, by a push.
+STARTERS = "starters.json"
 START = "<!-- entries:start -->"
 END = "<!-- entries:end -->"
 PREVIEW_LIGHT = "preview-light.png"
@@ -163,7 +165,17 @@ def write_entry(
 # -- the catalog ------------------------------------------------------------------------------------
 
 
-def _entry_in_catalog(root: Path, one: dict[str, Any]) -> dict[str, Any]:
+def starters(root: Path) -> set[str]:
+    """The ids in ``starters.json``: the entries the maintainers hold up as examples to start from (KARTEN-19 AC-4)."""
+    path = root / STARTERS
+    try:
+        found = read_json(path) if path.is_file() else []
+    except ValueError:
+        return set()
+    return {one for one in found if isinstance(one, str) and ID.match(one)} if isinstance(found, list) else set()
+
+
+def _entry_in_catalog(root: Path, one: dict[str, Any], examples: set[str]) -> dict[str, Any]:
     folder = f"entries/{one['id']}"
     meta = one["meta"]
     return {
@@ -193,11 +205,13 @@ def _entry_in_catalog(root: Path, one: dict[str, Any]) -> dict[str, Any]:
         "based_on": one.get("based_on"),
         "updated_at": one["updated_at"],
         "removed": one.get("removed"),
+        "starter": one["id"] in examples,
     }
 
 
 def build_catalog(root: Path, now: datetime) -> dict[str, Any]:
-    entries = [_entry_in_catalog(root, one) for one in all_entries(root)][:MAX_ENTRIES]
+    examples = starters(root)
+    entries = [_entry_in_catalog(root, one, examples) for one in all_entries(root)][:MAX_ENTRIES]
     return {"format": CATALOG_FORMAT, "generated_at": iso(now), "entries": entries}
 
 
