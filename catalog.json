@@ -1,6 +1,6 @@
 {
   "format": 1,
-  "generated_at": "2026-10-29T00:38:43Z",
+  "generated_at": "2026-10-29T00:46:17Z",
   "entries": [
     {
       "id": "188376159/immich-library",
@@ -530,7 +530,7 @@
         }
       ],
       "buttons": [],
-      "sha256": "616532f321fe19344f5f7dfde7466bc5ab886fdad4e98fa87609f41685801fdd",
+      "sha256": "7823c068fb5eb03e0d649ae1b9808f9ded093c099ca231d22d735033a68f1a21",
       "files": {
         "definition": "entries/188376159/wallabag/definition.yaml",
         "readme": "entries/188376159/wallabag/README.md",
@@ -541,7 +541,7 @@
       "thumbs": 0,
       "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/27",
       "based_on": null,
-      "updated_at": "2026-10-29T00:01:55Z",
+      "updated_at": "2026-10-29T00:46:17Z",
       "removed": null
     }
   ]

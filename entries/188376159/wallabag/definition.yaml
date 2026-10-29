@@ -35,6 +35,8 @@ auth:
     password: "{password}"
   ticket: {from: json, at: access_token}
   pass: {as: header, header: Authorization, value: "Bearer {ticket}"}
+  lifetime: {from: json, at: expires_in}
+  renew_on: [401, 500]
 test: /api/user.json
 test_expects: json
 reads:
