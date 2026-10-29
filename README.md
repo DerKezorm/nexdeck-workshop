@@ -48,14 +48,6 @@ Shows the series of your Sonarr library that have an episode coming, with the da
 
 ![Preview, light](entries/188376159/sonarr-next-episodes/preview-light.png#gh-light-mode-only)![Preview, dark](entries/188376159/sonarr-next-episodes/preview-dark.png#gh-dark-mode-only)
 
-#### [Queue size](entries/188376159/test-queue-size) (test)
-
-Card, version 1.0.0, reach: read, by [DerKezorm](https://github.com/DerKezorm), 0 thumbs up
-
-A test entry for the run of the correction: shows how many items wait.
-
-![Preview, light](entries/188376159/test-queue-size/preview-light.png#gh-light-mode-only)![Preview, dark](entries/188376159/test-queue-size/preview-dark.png#gh-dark-mode-only)
-
 #### [Recently added](entries/188376159/jellyfin-recently-added)
 
 Card, version 1.0.1, reach: read, by [DerKezorm](https://github.com/DerKezorm), 0 thumbs up
@@ -73,14 +65,6 @@ Card, version 1.0.0, reach: buttons, by [DerKezorm](https://github.com/DerKezorm
 Shows the torrents that qBittorrent is downloading right now, with their progress and speed. Every row has a Pause button that stops that torrent. The button needs qBittorrent 5.0 or newer.
 
 ![Preview, light](entries/188376159/qbittorrent-active-downloads/preview-light.png#gh-light-mode-only)![Preview, dark](entries/188376159/qbittorrent-active-downloads/preview-dark.png#gh-dark-mode-only)
-
-#### [Downloads](entries/188376159/test-downloads) (test)
-
-Card, version 1.1.0, reach: read, by [DerKezorm](https://github.com/DerKezorm), 1 thumbs up
-
-Shows the torrents of a download client with their progress. A test entry that stays as test data.
-
-![Preview, light](entries/188376159/test-downloads/preview-light.png#gh-light-mode-only)![Preview, dark](entries/188376159/test-downloads/preview-dark.png#gh-dark-mode-only)
 
 ### Server
 
@@ -101,14 +85,6 @@ Shows the first node of your Proxmox host with its processor and memory load, an
 ![Preview, light](entries/188376159/server-at-a-glance/preview-light.png#gh-light-mode-only)![Preview, dark](entries/188376159/server-at-a-glance/preview-dark.png#gh-dark-mode-only)
 
 ### Other
-
-#### [Example box](entries/188376159/test-box) (test)
-
-Connection, version -, reach: login, by [DerKezorm](https://github.com/DerKezorm), 0 thumbs up
-
-A made-up connection that signs in with a user name and a password. A test entry that stays as test data.
-
-![Preview, light](entries/188376159/test-box/preview-light.png#gh-light-mode-only)![Preview, dark](entries/188376159/test-box/preview-dark.png#gh-dark-mode-only)
 
 #### [NocoDB](entries/188376159/nocodb)
 

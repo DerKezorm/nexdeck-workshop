@@ -1,9 +1,0 @@
-# Changelog
-
-## 1.1.0 (2026-10-28)
-
-Demo data now holds whole percents.
-
-## 1.0.0 (2026-10-28)
-
-Initial release.
