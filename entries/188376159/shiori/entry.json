@@ -4,12 +4,13 @@
   "author_login": "DerKezorm",
   "category": "other",
   "based_on": null,
-  "issue": 20,
+  "issue": 38,
   "issues": [
-    20
+    20,
+    38
   ],
   "created_at": "2026-10-29T00:01:55Z",
-  "updated_at": "2026-10-29T00:01:55Z",
+  "updated_at": "2026-10-29T01:41:34Z",
   "removed": null,
   "thumbs": 0,
   "discussion": {
