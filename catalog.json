@@ -1,6 +1,6 @@
 {
   "format": 1,
-  "generated_at": "2026-10-29T04:21:41Z",
+  "generated_at": "2026-10-29T04:26:26Z",
   "entries": [
     {
       "id": "188376159/immich-library",
@@ -299,7 +299,7 @@
       "based_on": null,
       "updated_at": "2026-10-29T04:21:41Z",
       "removed": null,
-      "starter": false
+      "starter": true
     },
     {
       "id": "188376159/shiori",
@@ -554,7 +554,7 @@
       "removed": {
         "level": "harmful",
         "reason": "Test of the removal: this entry only exists to be taken out again.",
-        "at": "2026-10-28T11:27:06Z"
+        "at": "2026-10-29T04:26:26Z"
       },
       "starter": false
     },
