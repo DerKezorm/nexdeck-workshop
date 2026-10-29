@@ -50,6 +50,48 @@ def describes(text: str) -> bool:
     )
 
 
+#: Parts of a key in demo data that say its value grants access, upper or lower case, wherever they stand (the list nexdeck
+#: uses before sharing). A value under such a key that is not empty, null or a placeholder is a secret.
+ACCESS_KEYS = (
+    "apikey", "api_key", "token", "secret", "password", "passwd", "authorization", "cookie", "session", "private_key",
+    "client_secret", "access_key",
+)
+SECRET_IN_DEMO = 'The demo data hold a key or a password at {place} (key {key}). Replace it with "[hidden]" or a made-up value.'
+_DOTS = re.compile(r"[.…•*]+")
+
+
+def access_key(key: str) -> bool:
+    lowered = key.lower()
+    return any(part in lowered for part in ACCESS_KEYS)
+
+
+def placeholder(text: str) -> bool:
+    """A value that is obviously no credential but stands in for one: ``[hidden]``, dots, ``xxx…``, ``<…>``."""
+    text = text.strip()
+    return not text or text == "[hidden]" or bool(_DOTS.fullmatch(text)) or text.lower().startswith("xxx") or (text.startswith("<") and text.endswith(">"))
+
+
+def demo_secrets(demo: Any) -> list[tuple[str, str]]:
+    """``(place, key)`` of every value in the demo data under a key that sounds like access; never the value itself."""
+    found: list[tuple[str, str]] = []
+
+    def walk(value: Any, place: str, key: str) -> None:
+        if isinstance(value, dict):
+            for name, child in value.items():
+                walk(child, f"{place}.{name}", str(name))
+        elif isinstance(value, list):
+            for index, child in enumerate(value):
+                walk(child, f"{place}[{index}]", key)
+        elif value is not None and not isinstance(value, bool) and isinstance(value, str | int | float):
+            if access_key(key) and not placeholder(str(value)):
+                found.append((place, key))
+
+    if isinstance(demo, dict):
+        for name, answer in demo.items():
+            walk(answer, f"demo.{name}", "")
+    return found
+
+
 ID = re.compile(r"^(\d{1,12})/([a-z0-9][a-z0-9_-]{0,59})\Z")
 CONTROL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 

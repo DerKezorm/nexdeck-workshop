@@ -21,16 +21,20 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+import yaml
+
 from . import entries, issue_form, kitcheck
 from . import render as renderer
 from .common import (
     CATEGORIES,
     DESCRIPTION_SENTENCE,
+    SECRET_IN_DEMO,
     ID,
     MAX_ENTRIES,
     MAX_NEW_PER_DAY,
     MIN_CHANGES_CHARS,
     ROOT,
+    demo_secrets,
     describes,
     iso,
     maintainers,
@@ -79,6 +83,15 @@ def last_marker(comments: list[dict[str, Any]]) -> tuple[str, str] | None:
         if found:
             return found.group(1), found.group(2)
     return None
+
+
+def _demo_of(text: str) -> Any:
+    """The demo data of a definition, or nothing when it is no YAML (the check of the kit says why)."""
+    try:
+        data = yaml.safe_load(text)
+    except yaml.YAMLError:
+        return None
+    return data.get("demo") if isinstance(data, dict) else None
 
 
 def _reason(problem: dict[str, Any]) -> str:
@@ -159,6 +172,7 @@ def process(ctx: Context, issue: dict[str, Any], *, force: bool = False, announc
             ctx.kit,
         )
         reasons += [_reason(problem) for problem in checked.get("problems", [])]
+        reasons += [md(SECRET_IN_DEMO.format(place=place, key=key)) for place, key in demo_secrets(_demo_of(form.definition))]
     if reasons or not checked.get("ok"):
         return _rejected(number, digest, reasons or ["The definition did not pass the check."])
 

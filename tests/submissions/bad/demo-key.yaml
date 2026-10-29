@@ -1,0 +1,12 @@
+# expect: The demo data hold a key or a password at demo.q.apiKey
+nexdeck-card: 1
+slug: test-demo-key
+name: {en: Queue size}
+version: 1.0.0
+description: How many items wait in the queue.
+requires: [jsonapi]
+requests: [{id: q, path: /api/queue}]
+form: value
+value: {path: count, label: Queue, format: number}
+demo:
+  q: {count: 7, apiKey: "@@SECRET@@"}
