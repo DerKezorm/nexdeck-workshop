@@ -1,6 +1,6 @@
 {
   "format": 1,
-  "generated_at": "2026-10-29T02:15:23Z",
+  "generated_at": "2026-10-29T04:21:41Z",
   "entries": [
     {
       "id": "188376159/immich-library",
@@ -254,6 +254,52 @@
       "updated_at": "2026-10-29T00:01:55Z",
       "removed": null,
       "starter": true
+    },
+    {
+      "id": "188376159/server-at-a-glance",
+      "type": "card",
+      "slug": "server-at-a-glance",
+      "name": {
+        "en": "Server at a glance",
+        "de": "Server auf einen Blick"
+      },
+      "description": "Shows the first node of your Proxmox host with its processor and memory load, and the guests of the cluster with their state. The card only reads and changes nothing. It was checked against a live Proxmox VE 9 host.",
+      "author": {
+        "id": 188376159,
+        "login": "DerKezorm"
+      },
+      "version": "1.0.0",
+      "min_nexdeck": "0.51.0",
+      "category": "server",
+      "requires": [
+        "proxmox"
+      ],
+      "class": "read",
+      "reads": [
+        {
+          "kind": "proxmox",
+          "path": "/api2/json/nodes"
+        },
+        {
+          "kind": "proxmox",
+          "path": "/api2/json/cluster/resources?type=vm"
+        }
+      ],
+      "buttons": [],
+      "sha256": "a5ee6d510e36d753b655dc5f40278427417bb50863b5d4870f3b82cd0420e455",
+      "files": {
+        "definition": "entries/188376159/server-at-a-glance/definition.yaml",
+        "readme": "entries/188376159/server-at-a-glance/README.md",
+        "changelog": "entries/188376159/server-at-a-glance/CHANGELOG.md",
+        "light": "entries/188376159/server-at-a-glance/preview-light.png",
+        "dark": "entries/188376159/server-at-a-glance/preview-dark.png"
+      },
+      "thumbs": 0,
+      "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/40",
+      "based_on": null,
+      "updated_at": "2026-10-29T04:21:41Z",
+      "removed": null,
+      "starter": false
     },
     {
       "id": "188376159/shiori",

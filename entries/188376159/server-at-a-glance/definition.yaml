@@ -1,0 +1,82 @@
+nexdeck-card: 1
+slug: server-at-a-glance
+name: {en: Server at a glance, de: Server auf einen Blick}
+version: 1.0.0
+min_nexdeck: 0.51.0
+description: The first node of your Proxmox host with its processor and memory load, and a list of the guests with their state. The card only reads and changes nothing.
+category: server
+requires: [proxmox]
+requests:
+  - id: nodes
+    path: /api2/json/nodes
+  - id: guests
+    path: /api2/json/cluster/resources?type=vm
+form: builder
+main: cpu
+rows:
+  select: guests.data
+  sort: {field: name}
+  limit: 8
+blocks:
+  - type: row
+    align: between
+    children:
+      - type: row
+        gap: s
+        children:
+          - {type: symbol, icon: server, color: accent}
+          - {type: text, value: {path: "nodes.data[0].node"}, weight: bold}
+      - type: badge
+        value:
+          path: "nodes.data[0].status"
+          rules:
+            - {op: "==", than: online, then: ok}
+            - {op: "!=", than: online, then: bad}
+  - type: value
+    id: cpu
+    label: {en: Processor, de: Prozessor}
+    formula: "{nodes.data[0].cpu} * 100"
+    format: percent
+    digits: 0
+    size: l
+    rules:
+      - {op: ">", than: 90, then: bad}
+      - {op: ">", than: 70, then: warn}
+  - type: text
+    text: {en: Memory, de: Arbeitsspeicher}
+    size: s
+    color: muted
+  - type: progress
+    value: {formula: "{nodes.data[0].mem} / {nodes.data[0].maxmem} * 100"}
+    max: 100
+  - type: divider
+  - type: list
+    empty: {en: No guests, de: Keine Gäste}
+    item:
+      - type: row
+        align: between
+        children:
+          - {type: text, value: {path: name}}
+          - type: badge
+            value:
+              path: status
+              rules:
+                - {op: "==", than: running, then: ok}
+                - {op: "!=", than: running, then: warn}
+demo:
+  nodes:
+    data:
+    - {node: pve1, status: online, cpu: 0.0371, maxcpu: 8, mem: 11811160064, maxmem: 33432793088, disk: 13421772800, maxdisk: 100861726720, uptime: 2954231,
+      level: '', id: node/pve1, type: node}
+  guests:
+    data:
+    - {id: qemu/100, type: qemu, vmid: 100, name: media-server, node: pve1, status: running, cpu: 0.0214, maxcpu: 4, mem: 4294967296, maxmem: 8589934592,
+      disk: 0, maxdisk: 34359738368, uptime: 1184020, template: 0}
+    - {id: lxc/101, type: lxc, vmid: 101, name: dns-filter, node: pve1, status: running, cpu: 0.0031, maxcpu: 1, mem: 134217728, maxmem: 536870912,
+      disk: 1288490188, maxdisk: 4294967296, uptime: 2210311, template: 0}
+    - {id: lxc/102, type: lxc, vmid: 102, name: file-share, node: pve1, status: running, cpu: 0.0102, maxcpu: 2, mem: 805306368, maxmem: 2147483648,
+      disk: 5368709120, maxdisk: 21474836480, uptime: 2210290, template: 0}
+    - {id: qemu/110, type: qemu, vmid: 110, name: test-vm, node: pve1, status: stopped, cpu: 0, maxcpu: 2, mem: 0, maxmem: 4294967296, disk: 0,
+      maxdisk: 17179869184, uptime: 0, template: 0}
+    - {id: lxc/120, type: lxc, vmid: 120, name: backup-agent, node: pve1, status: running, cpu: 0.0008, maxcpu: 1, mem: 100663296, maxmem: 268435456,
+      disk: 536870912, maxdisk: 2147483648, uptime: 905112, template: 0}

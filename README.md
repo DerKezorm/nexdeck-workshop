@@ -92,6 +92,14 @@ Shows how many administrators your Pocket ID has.
 
 ![Preview, light](entries/188376159/pocket-id/preview-light.png#gh-light-mode-only)![Preview, dark](entries/188376159/pocket-id/preview-dark.png#gh-dark-mode-only)
 
+#### [Server at a glance](entries/188376159/server-at-a-glance)
+
+Card, version 1.0.0, reach: read, by [DerKezorm](https://github.com/DerKezorm), 0 thumbs up
+
+Shows the first node of your Proxmox host with its processor and memory load, and the guests of the cluster with their state. The card only reads and changes nothing. It was checked against a live Proxmox VE 9 host.
+
+![Preview, light](entries/188376159/server-at-a-glance/preview-light.png#gh-light-mode-only)![Preview, dark](entries/188376159/server-at-a-glance/preview-dark.png#gh-dark-mode-only)
+
 ### Other
 
 #### [Example box](entries/188376159/test-box) (test)
