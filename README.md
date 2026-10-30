@@ -79,6 +79,30 @@ Shows the first node of your Proxmox host with its processor and memory load, an
 
 ### Other
 
+#### [Latte paper](entries/188376159/latte)
+
+Skin, version 1.0.0, by [DerKezorm](https://github.com/DerKezorm), 0 thumbs up
+
+Warm paper colours from Catppuccin Latte, with flat cards and room between them.
+
+![Preview, light](entries/188376159/latte/preview-light.png#gh-light-mode-only)![Preview, dark](entries/188376159/latte/preview-dark.png#gh-dark-mode-only)
+
+#### [Midnight neon](entries/188376159/midnight)
+
+Skin, version 1.0.0, by [DerKezorm](https://github.com/DerKezorm), 0 thumbs up
+
+Deep blue night colours from Tokyo Night with neon edges around the cards.
+
+![Preview, light](entries/188376159/midnight/preview-light.png#gh-light-mode-only)![Preview, dark](entries/188376159/midnight/preview-dark.png#gh-dark-mode-only)
+
+#### [Night castle](entries/188376159/castle)
+
+Skin, version 1.0.0, by [DerKezorm](https://github.com/DerKezorm), 0 thumbs up
+
+The dark purples of Dracula with glass cards and round corners.
+
+![Preview, light](entries/188376159/castle/preview-light.png#gh-light-mode-only)![Preview, dark](entries/188376159/castle/preview-dark.png#gh-dark-mode-only)
+
 #### [NocoDB](entries/188376159/nocodb)
 
 Connection, version -, reach: read, by [DerKezorm](https://github.com/DerKezorm), 0 thumbs up
@@ -86,6 +110,22 @@ Connection, version -, reach: read, by [DerKezorm](https://github.com/DerKezorm)
 Connects nexdeck to NocoDB, the spreadsheet-like front end for databases. It uses an API token that is sent in the header xc-token, so there is no sign-in to keep. Your cards can then read the bases and, with a path, the rows of a table.
 
 ![Preview, light](entries/188376159/nocodb/preview-light.png#gh-light-mode-only)![Preview, dark](entries/188376159/nocodb/preview-dark.png#gh-dark-mode-only)
+
+#### [Nordic frost](entries/188376159/frost)
+
+Skin, version 1.0.0, by [DerKezorm](https://github.com/DerKezorm), 0 thumbs up
+
+The cool blues and greys of Nord, with outlined cards and tight corners.
+
+![Preview, light](entries/188376159/frost/preview-light.png#gh-light-mode-only)![Preview, dark](entries/188376159/frost/preview-dark.png#gh-dark-mode-only)
+
+#### [Quiet desk](entries/188376159/quiet)
+
+Skin, version 1.0.0, by [DerKezorm](https://github.com/DerKezorm), 0 thumbs up
+
+Calm graphite greys and the Geist type, with quiet cards that keep out of the way.
+
+![Preview, light](entries/188376159/quiet/preview-light.png#gh-light-mode-only)![Preview, dark](entries/188376159/quiet/preview-dark.png#gh-dark-mode-only)
 
 #### [Shiori](entries/188376159/shiori)
 

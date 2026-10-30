@@ -1,0 +1,47 @@
+{
+  "nexdeck_skin": 1,
+  "key": "latte",
+  "name": "Latte paper",
+  "description": "Warm paper colours from Catppuccin Latte, with flat cards and room between them.",
+  "author": "DerKezorm",
+  "version": "1.0.0",
+  "tokens": {
+    "card_style": "flat",
+    "radius": 12,
+    "gap": 14,
+    "dark": {
+      "bg": "#181825",
+      "bg-elev": "#1e1e2e",
+      "surface": "#26263a",
+      "surface-hover": "#313244",
+      "border": "#313244",
+      "border-strong": "#45475a",
+      "text": "#cdd6f4",
+      "text-muted": "#bac2de",
+      "text-faint": "#a6adc8",
+      "accent": "#cba6f7",
+      "on-accent": "#11111b",
+      "ok": "#a6e3a1",
+      "warn": "#f9e2af",
+      "bad": "#f38ba8",
+      "unknown": "#9399b2"
+    },
+    "light": {
+      "bg": "#e6e9ef",
+      "bg-elev": "#eff1f5",
+      "surface": "#f6f7fa",
+      "surface-hover": "#dce0e8",
+      "border": "#ccd0da",
+      "border-strong": "#bcc0cc",
+      "text": "#4c4f69",
+      "text-muted": "#5c5f77",
+      "text-faint": "#626576",
+      "accent": "#8534ef",
+      "on-accent": "#ffffff",
+      "ok": "#2c7420",
+      "warn": "#8a5b0f",
+      "bad": "#cd0f38",
+      "unknown": "#636675"
+    }
+  }
+}

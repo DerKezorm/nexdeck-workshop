@@ -1,7 +1,71 @@
 {
   "format": 1,
-  "generated_at": "2026-10-29T14:41:41Z",
+  "generated_at": "2026-10-30T08:31:08Z",
   "entries": [
+    {
+      "id": "188376159/castle",
+      "type": "skin",
+      "slug": "castle",
+      "name": "Night castle",
+      "description": "The dark purples of Dracula with glass cards and round corners.",
+      "author": {
+        "id": 188376159,
+        "login": "DerKezorm"
+      },
+      "version": "1.0.0",
+      "min_nexdeck": "1.1.0",
+      "category": "other",
+      "requires": [],
+      "class": "read",
+      "reads": [],
+      "buttons": [],
+      "sha256": "0364f14aec33cbb486332124c26230d97e6e136bcadb5b0550cfde9c2dc253dc",
+      "files": {
+        "definition": "entries/188376159/castle/skin.json",
+        "readme": "entries/188376159/castle/README.md",
+        "changelog": "entries/188376159/castle/CHANGELOG.md",
+        "light": "entries/188376159/castle/preview-light.png",
+        "dark": "entries/188376159/castle/preview-dark.png"
+      },
+      "thumbs": 0,
+      "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/50",
+      "based_on": null,
+      "updated_at": "2026-10-30T08:31:08Z",
+      "removed": null,
+      "starter": false
+    },
+    {
+      "id": "188376159/frost",
+      "type": "skin",
+      "slug": "frost",
+      "name": "Nordic frost",
+      "description": "The cool blues and greys of Nord, with outlined cards and tight corners.",
+      "author": {
+        "id": 188376159,
+        "login": "DerKezorm"
+      },
+      "version": "1.0.0",
+      "min_nexdeck": "1.1.0",
+      "category": "other",
+      "requires": [],
+      "class": "read",
+      "reads": [],
+      "buttons": [],
+      "sha256": "dc33ad494f6b0cdc1dcb394f73ce4a470076a7acfa0ad32f5a0643710c9d8673",
+      "files": {
+        "definition": "entries/188376159/frost/skin.json",
+        "readme": "entries/188376159/frost/README.md",
+        "changelog": "entries/188376159/frost/CHANGELOG.md",
+        "light": "entries/188376159/frost/preview-light.png",
+        "dark": "entries/188376159/frost/preview-dark.png"
+      },
+      "thumbs": 0,
+      "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/52",
+      "based_on": null,
+      "updated_at": "2026-10-30T08:31:08Z",
+      "removed": null,
+      "starter": false
+    },
     {
       "id": "188376159/immich-library",
       "type": "card",
@@ -87,6 +151,70 @@
       "starter": true
     },
     {
+      "id": "188376159/latte",
+      "type": "skin",
+      "slug": "latte",
+      "name": "Latte paper",
+      "description": "Warm paper colours from Catppuccin Latte, with flat cards and room between them.",
+      "author": {
+        "id": 188376159,
+        "login": "DerKezorm"
+      },
+      "version": "1.0.0",
+      "min_nexdeck": "1.1.0",
+      "category": "other",
+      "requires": [],
+      "class": "read",
+      "reads": [],
+      "buttons": [],
+      "sha256": "eff84fed4c57cae6530bc6e4d37cf257016a614c502450c2fc3e2893f85aa092",
+      "files": {
+        "definition": "entries/188376159/latte/skin.json",
+        "readme": "entries/188376159/latte/README.md",
+        "changelog": "entries/188376159/latte/CHANGELOG.md",
+        "light": "entries/188376159/latte/preview-light.png",
+        "dark": "entries/188376159/latte/preview-dark.png"
+      },
+      "thumbs": 0,
+      "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/47",
+      "based_on": null,
+      "updated_at": "2026-10-30T08:31:08Z",
+      "removed": null,
+      "starter": false
+    },
+    {
+      "id": "188376159/midnight",
+      "type": "skin",
+      "slug": "midnight",
+      "name": "Midnight neon",
+      "description": "Deep blue night colours from Tokyo Night with neon edges around the cards.",
+      "author": {
+        "id": 188376159,
+        "login": "DerKezorm"
+      },
+      "version": "1.0.0",
+      "min_nexdeck": "1.1.0",
+      "category": "other",
+      "requires": [],
+      "class": "read",
+      "reads": [],
+      "buttons": [],
+      "sha256": "03826f3596375d2aba72d336cde789a65443b0090bbdd28f5ceb4b561bba8322",
+      "files": {
+        "definition": "entries/188376159/midnight/skin.json",
+        "readme": "entries/188376159/midnight/README.md",
+        "changelog": "entries/188376159/midnight/CHANGELOG.md",
+        "light": "entries/188376159/midnight/preview-light.png",
+        "dark": "entries/188376159/midnight/preview-dark.png"
+      },
+      "thumbs": 0,
+      "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/49",
+      "based_on": null,
+      "updated_at": "2026-10-30T08:31:08Z",
+      "removed": null,
+      "starter": false
+    },
+    {
       "id": "188376159/nocodb",
       "type": "integration",
       "slug": "nocodb",
@@ -170,6 +298,38 @@
       "updated_at": "2026-10-29T00:01:55Z",
       "removed": null,
       "starter": true
+    },
+    {
+      "id": "188376159/quiet",
+      "type": "skin",
+      "slug": "quiet",
+      "name": "Quiet desk",
+      "description": "Calm graphite greys and the Geist type, with quiet cards that keep out of the way.",
+      "author": {
+        "id": 188376159,
+        "login": "DerKezorm"
+      },
+      "version": "1.0.0",
+      "min_nexdeck": "1.1.0",
+      "category": "other",
+      "requires": [],
+      "class": "read",
+      "reads": [],
+      "buttons": [],
+      "sha256": "eb2571f6ada9a31f7e10b7e28d2564cbcb9777cdef04b5b034fe30550e64f81b",
+      "files": {
+        "definition": "entries/188376159/quiet/skin.json",
+        "readme": "entries/188376159/quiet/README.md",
+        "changelog": "entries/188376159/quiet/CHANGELOG.md",
+        "light": "entries/188376159/quiet/preview-light.png",
+        "dark": "entries/188376159/quiet/preview-dark.png"
+      },
+      "thumbs": 0,
+      "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/53",
+      "based_on": null,
+      "updated_at": "2026-10-30T08:31:08Z",
+      "removed": null,
+      "starter": false
     },
     {
       "id": "188376159/radarr-missing",

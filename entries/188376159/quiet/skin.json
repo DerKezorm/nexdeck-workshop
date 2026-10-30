@@ -1,0 +1,48 @@
+{
+  "nexdeck_skin": 1,
+  "key": "quiet",
+  "name": "Quiet desk",
+  "description": "Calm graphite greys and the Geist type, with quiet cards that keep out of the way.",
+  "author": "DerKezorm",
+  "version": "1.0.0",
+  "tokens": {
+    "card_style": "calm",
+    "radius": 10,
+    "gap": 14,
+    "font": "geist",
+    "dark": {
+      "bg": "#0c0c0d",
+      "bg-elev": "#131314",
+      "surface": "#1a1a1c",
+      "surface-hover": "#232326",
+      "border": "#2a2a2e",
+      "border-strong": "#3d3d42",
+      "text": "#f4f4f5",
+      "text-muted": "#b8b8bf",
+      "text-faint": "#9d9da6",
+      "accent": "#d9f99d",
+      "on-accent": "#141a05",
+      "ok": "#86efac",
+      "warn": "#fde047",
+      "bad": "#fca5a5",
+      "unknown": "#909098"
+    },
+    "light": {
+      "bg": "#f4f4f5",
+      "bg-elev": "#ffffff",
+      "surface": "#ffffff",
+      "surface-hover": "#ececee",
+      "border": "#dcdce0",
+      "border-strong": "#c6c6cc",
+      "text": "#141416",
+      "text-muted": "#45454d",
+      "text-faint": "#57575f",
+      "accent": "#3f6212",
+      "on-accent": "#ffffff",
+      "ok": "#166534",
+      "warn": "#854d0e",
+      "bad": "#b91c1c",
+      "unknown": "#5c5c64"
+    }
+  }
+}

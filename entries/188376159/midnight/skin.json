@@ -1,0 +1,47 @@
+{
+  "nexdeck_skin": 1,
+  "key": "midnight",
+  "name": "Midnight neon",
+  "description": "Deep blue night colours from Tokyo Night with neon edges around the cards.",
+  "author": "DerKezorm",
+  "version": "1.0.0",
+  "tokens": {
+    "card_style": "neon",
+    "radius": 14,
+    "gap": 12,
+    "dark": {
+      "bg": "#16161e",
+      "bg-elev": "#1a1b26",
+      "surface": "#1f2335",
+      "surface-hover": "#292e42",
+      "border": "#292e42",
+      "border-strong": "#3b4261",
+      "text": "#c0caf5",
+      "text-muted": "#a9b1d6",
+      "text-faint": "#8f98c2",
+      "accent": "#7aa2f7",
+      "on-accent": "#16161e",
+      "ok": "#9ece6a",
+      "warn": "#e0af68",
+      "bad": "#f7768e",
+      "unknown": "#838cb5"
+    },
+    "light": {
+      "bg": "#d5d6db",
+      "bg-elev": "#e1e2e7",
+      "surface": "#e9e9ed",
+      "surface-hover": "#c4c8da",
+      "border": "#c4c8da",
+      "border-strong": "#a8aecb",
+      "text": "#343b58",
+      "text-muted": "#3256ab",
+      "text-faint": "#545a74",
+      "accent": "#1358b1",
+      "on-accent": "#ffffff",
+      "ok": "#47632d",
+      "warn": "#705730",
+      "bad": "#b60a38",
+      "unknown": "#51597a"
+    }
+  }
+}

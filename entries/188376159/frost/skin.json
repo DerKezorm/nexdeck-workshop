@@ -1,0 +1,47 @@
+{
+  "nexdeck_skin": 1,
+  "key": "frost",
+  "name": "Nordic frost",
+  "description": "The cool blues and greys of Nord, with outlined cards and tight corners.",
+  "author": "DerKezorm",
+  "version": "1.0.0",
+  "tokens": {
+    "card_style": "outline",
+    "radius": 8,
+    "gap": 10,
+    "dark": {
+      "bg": "#242933",
+      "bg-elev": "#2e3440",
+      "surface": "#343b49",
+      "surface-hover": "#3b4252",
+      "border": "#3b4252",
+      "border-strong": "#4c566a",
+      "text": "#eceff4",
+      "text-muted": "#d8dee9",
+      "text-faint": "#b4bccb",
+      "accent": "#88c0d0",
+      "on-accent": "#2e3440",
+      "ok": "#a3be8c",
+      "warn": "#ebcb8b",
+      "bad": "#d4999b",
+      "unknown": "#a0a9b9"
+    },
+    "light": {
+      "bg": "#e5e9f0",
+      "bg-elev": "#eceff4",
+      "surface": "#f4f6f9",
+      "surface-hover": "#d8dee9",
+      "border": "#d8dee9",
+      "border-strong": "#c2cad8",
+      "text": "#2e3440",
+      "text-muted": "#3b4252",
+      "text-faint": "#4c566a",
+      "accent": "#486a90",
+      "on-accent": "#ffffff",
+      "ok": "#536d3d",
+      "warn": "#9f4e33",
+      "bad": "#ab434f",
+      "unknown": "#4c566a"
+    }
+  }
+}

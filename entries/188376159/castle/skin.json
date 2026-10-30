@@ -1,0 +1,47 @@
+{
+  "nexdeck_skin": 1,
+  "key": "castle",
+  "name": "Night castle",
+  "description": "The dark purples of Dracula with glass cards and round corners.",
+  "author": "DerKezorm",
+  "version": "1.0.0",
+  "tokens": {
+    "card_style": "glass",
+    "radius": 18,
+    "gap": 12,
+    "dark": {
+      "bg": "#21222c",
+      "bg-elev": "#282a36",
+      "surface": "#2f3140",
+      "surface-hover": "#3a3c4e",
+      "border": "#3a3c4e",
+      "border-strong": "#6272a4",
+      "text": "#f8f8f2",
+      "text-muted": "#d6d8e8",
+      "text-faint": "#a9aed0",
+      "accent": "#bd93f9",
+      "on-accent": "#21222c",
+      "ok": "#50fa7b",
+      "warn": "#f1fa8c",
+      "bad": "#ff6e6e",
+      "unknown": "#9aa0c0"
+    },
+    "light": {
+      "bg": "#f3eedb",
+      "bg-elev": "#fffbeb",
+      "surface": "#fffdf5",
+      "surface-hover": "#ece6cf",
+      "border": "#e3dcc2",
+      "border-strong": "#cfc6a6",
+      "text": "#1f1f1f",
+      "text-muted": "#4a4636",
+      "text-faint": "#6c664b",
+      "accent": "#644ac9",
+      "on-accent": "#ffffff",
+      "ok": "#14710a",
+      "warn": "#7c6613",
+      "bad": "#c33828",
+      "unknown": "#6c664b"
+    }
+  }
+}
