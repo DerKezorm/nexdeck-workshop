@@ -1,6 +1,6 @@
 {
   "format": 1,
-  "generated_at": "2026-10-30T08:32:07Z",
+  "generated_at": "2026-10-30T10:54:15Z",
   "entries": [
     {
       "id": "188376159/castle",
@@ -308,7 +308,7 @@
         "light": "entries/188376159/nocodb/preview-light.png",
         "dark": "entries/188376159/nocodb/preview-dark.png"
       },
-      "thumbs": 0,
+      "thumbs": 1,
       "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/29",
       "based_on": null,
       "updated_at": "2026-10-29T00:01:55Z",
@@ -476,7 +476,7 @@
         "light": "entries/188376159/server-at-a-glance/preview-light.png",
         "dark": "entries/188376159/server-at-a-glance/preview-dark.png"
       },
-      "thumbs": 0,
+      "thumbs": 1,
       "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/40",
       "based_on": null,
       "updated_at": "2026-10-29T04:21:41Z",

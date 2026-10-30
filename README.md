@@ -71,7 +71,7 @@ Shows the torrents that qBittorrent is downloading right now, with their progres
 
 #### [Server at a glance](entries/188376159/server-at-a-glance)
 
-Card, version 1.0.0, reach: read, by [DerKezorm](https://github.com/DerKezorm), 0 thumbs up
+Card, version 1.0.0, reach: read, by [DerKezorm](https://github.com/DerKezorm), 1 thumbs up
 
 Shows the first node of your Proxmox host with its processor and memory load, and the guests of the cluster with their state. The card only reads and changes nothing. It was checked against a live Proxmox VE 9 host.
 
@@ -105,7 +105,7 @@ The dark purples of Dracula with glass cards and round corners.
 
 #### [NocoDB](entries/188376159/nocodb)
 
-Connection, version -, reach: read, by [DerKezorm](https://github.com/DerKezorm), 0 thumbs up
+Connection, version -, reach: read, by [DerKezorm](https://github.com/DerKezorm), 1 thumbs up
 
 Connects nexdeck to NocoDB, the spreadsheet-like front end for databases. It uses an API token that is sent in the header xc-token, so there is no sign-in to keep. Your cards can then read the bases and, with a path, the rows of a table.
 
