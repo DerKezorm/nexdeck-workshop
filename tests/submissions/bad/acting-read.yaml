@@ -1,4 +1,4 @@
-# expect: which acts
+# expect: asks the service to do something
 nexdeck-card: 1
 slug: test-acting
 name: Acting read
