@@ -21,7 +21,13 @@ CATEGORIES = {
     "smart_home": "Smart home",
     "other": "Other",
 }
-TYPES = {"card": "Card", "integration": "Connection"}
+TYPES = {"card": "Card", "integration": "Connection", "skin": "Skin"}
+#: The file an entry keeps its definition in: a card and a connection are YAML, a skin is a JSON file.
+DEFINITION_FILES = {"card": "definition.yaml", "integration": "definition.yaml", "skin": "skin.json"}
+
+
+def definition_file(kind: str) -> str:
+    return DEFINITION_FILES.get(kind, "definition.yaml")
 
 #: More new entries than this from one account on one day wait for the next day (KARTEN-13 EC-3).
 MAX_NEW_PER_DAY = 10

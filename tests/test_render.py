@@ -41,6 +41,15 @@ def test_karten13_ac3_a_connection_is_drawn(tmp_path: Path) -> None:
 
 
 @needs_browser
+def test_a_skin_is_drawn_on_the_stage_light_and_dark(tmp_path: Path) -> None:
+    checked = kitcheck.check(sample("skins", "pixel-desk.json"), "skin")
+    assert checked["ok"], checked["problems"]
+    render.draw(checked, tmp_path / "light.png", tmp_path / "dark.png")
+    light, dark = _png(tmp_path / "light.png"), _png(tmp_path / "dark.png")
+    assert len(light) > 20_000 and light != dark
+
+
+@needs_browser
 def test_karten13_ec6_a_card_that_breaks_the_page_is_an_error_not_a_picture(tmp_path: Path) -> None:
     checked = kitcheck.check(sample("good", "value-card.yaml"), "card")
     checked["form"], checked["widget_data"] = "list", {"status": "ok", "items": "not a list"}

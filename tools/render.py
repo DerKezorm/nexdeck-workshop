@@ -51,6 +51,9 @@ def stand_in(checked: dict[str, Any]) -> dict[str, Any]:
 
 
 def spec_of(checked: dict[str, Any], theme: str) -> dict[str, Any]:
+    if checked["type"] == "skin":
+        # A skin is worn on the stage of nexdeck's skin editor: the style sheet the kit compiled, as nexdeck compiles it.
+        return {"skin": checked["compiled"], "name": plain(checked["name"]), "theme": theme}
     if checked["type"] == "integration":
         data, form = stand_in(checked), "list"
     else:
@@ -83,7 +86,9 @@ def draw(checked: dict[str, Any], light: Path, dark: Path, kit: Path | None = No
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch(headless=True)
             try:
-                context = browser.new_context(device_scale_factor=2, viewport={"width": 900, "height": 700})
+                # A skin is a whole page in small, a card one card: the page is drawn wider and at its own size.
+                skin = checked["type"] == "skin"
+                context = browser.new_context(device_scale_factor=1 if skin else 2, viewport={"width": 1200, "height": 800} if skin else {"width": 900, "height": 700})
                 context.route("**/*", lambda route: route.continue_() if is_local(route.request.url, origin) else route.abort())
                 view = context.new_page()
                 problems: list[str] = []
@@ -98,9 +103,9 @@ def draw(checked: dict[str, Any], light: Path, dark: Path, kit: Path | None = No
                         # A card whose data break the renderer takes the whole tree down: no stage, and an error of the page.
                         view.wait_for_selector("#stage", timeout=4_000)
                     except PlaywrightError:
-                        raise RenderError("The card broke the drawing page" + (f": {problems[0][:200]}" if problems else ".")) from None
+                        raise RenderError(f"The {'skin' if skin else 'card'} broke the drawing page" + (f": {problems[0][:200]}" if problems else ".")) from None
                     if problems:
-                        raise RenderError("The card broke the drawing page: " + problems[0][:200])
+                        raise RenderError(f"The {'skin' if skin else 'card'} broke the drawing page: " + problems[0][:200])
                     view.locator("#stage").screenshot(path=str(target), timeout=15_000)
             finally:
                 browser.close()

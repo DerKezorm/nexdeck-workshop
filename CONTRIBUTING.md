@@ -1,8 +1,8 @@
 # Contributing
 
-## Submitting a card or a connection
+## Submitting a card, a connection or a skin
 
-1. Build it in nexdeck (System, Custom cards) and test it with real data. Add demo data to a card: the preview pictures are drawn from them, and nobody else sees your real answers.
+1. Build it in nexdeck (System, Custom cards, or System, Skins for a skin) and test it with real data. Add demo data to a card: the preview pictures are drawn from them, and nobody else sees your real answers. A skin is drawn on the stage of nexdeck's skin editor, dark and light.
 2. In nexdeck, use "Submit to the workshop". Or open the [form](../../issues/new?template=submit.yml) and paste the text of the card.
 3. Wait for the comment. It takes a minute or two. Green: your entry is added and the issue is closed with a link. Red: the comment lists every reason; edit the issue (or comment `/recheck`) and it is checked again.
 
@@ -15,8 +15,9 @@
 - Texts in several languages have an English one; a card has demo data; the category is one of Media, Downloads, Network, Server, Smart home, Other.
 - The description is a few sentences of English: at least 3 words and 20 characters, with common words such as "the", "with" or "how". An update has a list of changes of at least 3 characters.
 - Your preview can be drawn.
+- A skin is compiled the way nexdeck compiles it: only parts and properties nexdeck allows, nothing fetched, at most 200,000 characters, and not the name of a skin nexdeck ships.
 
-The check class of an entry is `read` (only reads), `buttons` (has buttons that change something) or `login` (a connection that signs in). nexdeck shows it before anyone installs.
+The check class of an entry is `read` (only reads), `buttons` (has buttons that change something) or `login` (a connection that signs in). nexdeck shows it before anyone installs. A skin reads and presses nothing and has no class to show.
 
 ### Updates
 
@@ -35,8 +36,8 @@ What a maintainer removed stays removed: `/withdraw` does not change it and an u
 
 ## For tools that make issues (nexdeck)
 
-An issue is read from its Markdown body; the headings are the fields of the form: `### Type` (Card or Connection),
-`### Category`, `### Definition` (a fenced `yaml` block), `### Description`, `### Changes`, `### Based on`,
+An issue is read from its Markdown body; the headings are the fields of the form: `### Type` (Card, Connection or Skin),
+`### Category`, `### Definition` (a fenced `yaml` block, `json` for a skin), `### Description`, `### Changes`, `### Based on`,
 `### Update of` (`_No response_` for an empty field) and `### License` with a ticked box `- [x] I submit this under the MIT License and I have the right to do so.`
 `tools/issue_form.py` has `build_body`, which writes it.
 

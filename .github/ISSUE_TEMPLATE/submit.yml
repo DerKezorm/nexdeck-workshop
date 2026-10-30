@@ -1,5 +1,5 @@
-name: Submit a card or a connection
-description: Hand a custom card or an own connection in to the workshop. It is checked by an action and, when it passes, added.
+name: Submit a card, a connection or a skin
+description: Hand a custom card, an own connection or a skin in to the workshop. It is checked by an action and, when it passes, added.
 title: "Submit: "
 body:
   - type: markdown
@@ -15,6 +15,7 @@ body:
       options:
         - Card
         - Connection
+        - Skin
     validations:
       required: true
   - type: dropdown
@@ -35,7 +36,7 @@ body:
     id: definition
     attributes:
       label: Definition
-      description: The text of the card or connection as nexdeck saves it, including the demo data (a card needs them for its picture).
+      description: The text of the card or connection as nexdeck saves it, including the demo data (a card needs them for its picture), or the JSON file of a skin.
       render: yaml
     validations:
       required: true

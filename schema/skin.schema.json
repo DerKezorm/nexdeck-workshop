@@ -1,0 +1,688 @@
+{
+  "$defs": {
+    "Choice": {
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "pattern": "^[a-z0-9][a-z0-9-]{0,31}$",
+          "title": "Key",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 60,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        }
+      },
+      "required": [
+        "key",
+        "label"
+      ],
+      "title": "Choice",
+      "type": "object"
+    },
+    "Decoration": {
+      "additionalProperties": false,
+      "properties": {
+        "part": {
+          "title": "Part",
+          "type": "string"
+        },
+        "anchor": {
+          "enum": [
+            "top-left",
+            "top-right",
+            "bottom-left",
+            "bottom-right"
+          ],
+          "title": "Anchor",
+          "type": "string"
+        },
+        "sprite": {
+          "pattern": "^[a-z][a-z0-9-]{0,23}$",
+          "title": "Sprite",
+          "type": "string"
+        },
+        "size": {
+          "default": 16,
+          "maximum": 32,
+          "minimum": 8,
+          "title": "Size",
+          "type": "integer"
+        },
+        "offset": {
+          "default": 0,
+          "maximum": 16,
+          "minimum": -16,
+          "title": "Offset",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "part",
+        "anchor",
+        "sprite"
+      ],
+      "title": "Decoration",
+      "type": "object"
+    },
+    "Desk": {
+      "additionalProperties": false,
+      "properties": {
+        "tile": {
+          "pattern": "^[a-z][a-z0-9-]{0,23}$",
+          "title": "Tile",
+          "type": "string"
+        },
+        "scale": {
+          "default": 2,
+          "maximum": 8,
+          "minimum": 1,
+          "title": "Scale",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "tile"
+      ],
+      "title": "Desk",
+      "type": "object"
+    },
+    "Frame": {
+      "additionalProperties": false,
+      "description": "A border cut from a sprite: ``slice`` pixels of it from each side, drawn ``width`` pixels wide.",
+      "properties": {
+        "sprite": {
+          "pattern": "^[a-z][a-z0-9-]{0,23}$",
+          "title": "Sprite",
+          "type": "string"
+        },
+        "slice": {
+          "maximum": 16,
+          "minimum": 1,
+          "title": "Slice",
+          "type": "integer"
+        },
+        "width": {
+          "maximum": 16,
+          "minimum": 1,
+          "title": "Width",
+          "type": "integer"
+        },
+        "repeat": {
+          "default": "round",
+          "enum": [
+            "stretch",
+            "repeat",
+            "round"
+          ],
+          "title": "Repeat",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sprite",
+        "slice",
+        "width"
+      ],
+      "title": "Frame",
+      "type": "object"
+    },
+    "Motion": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "enum": [
+            "hop",
+            "wiggle",
+            "spin",
+            "pulse",
+            "sink",
+            "fade"
+          ],
+          "title": "Name",
+          "type": "string"
+        },
+        "on": {
+          "default": "hover",
+          "enum": [
+            "hover",
+            "press",
+            "always"
+          ],
+          "title": "On",
+          "type": "string"
+        },
+        "ms": {
+          "default": 400,
+          "maximum": 2000,
+          "minimum": 340,
+          "title": "Ms",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "Motion",
+      "type": "object"
+    },
+    "Option": {
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "pattern": "^[a-z0-9][a-z0-9-]{0,31}$",
+          "title": "Key",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 60,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "choices": {
+          "items": {
+            "$ref": "#/$defs/Choice"
+          },
+          "maxItems": 6,
+          "minItems": 2,
+          "title": "Choices",
+          "type": "array"
+        },
+        "default": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{0,31}$",
+          "title": "Default"
+        }
+      },
+      "required": [
+        "key",
+        "label",
+        "choices",
+        "default"
+      ],
+      "title": "Option",
+      "type": "object"
+    },
+    "PartLook": {
+      "additionalProperties": false,
+      "properties": {
+        "frame": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9-]{0,23}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Frame"
+        },
+        "motion": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Motion"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "sound": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9-]{0,23}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sound"
+        }
+      },
+      "title": "PartLook",
+      "type": "object"
+    },
+    "Sound": {
+      "additionalProperties": false,
+      "properties": {
+        "wave": {
+          "default": "square",
+          "enum": [
+            "square",
+            "triangle",
+            "sine",
+            "sawtooth"
+          ],
+          "title": "Wave",
+          "type": "string"
+        },
+        "from": {
+          "default": 520,
+          "maximum": 4000,
+          "minimum": 40,
+          "title": "From",
+          "type": "integer"
+        },
+        "to": {
+          "default": 1040,
+          "maximum": 4000,
+          "minimum": 40,
+          "title": "To",
+          "type": "integer"
+        },
+        "ms": {
+          "default": 120,
+          "maximum": 600,
+          "minimum": 20,
+          "title": "Ms",
+          "type": "integer"
+        },
+        "volume": {
+          "default": 0.06,
+          "maximum": 0.2,
+          "minimum": 0.01,
+          "title": "Volume",
+          "type": "number"
+        }
+      },
+      "title": "Sound",
+      "type": "object"
+    },
+    "Sprite": {
+      "additionalProperties": false,
+      "description": "Rows of characters, each a colour of the palette; ``.`` is see-through. ``tint`` uses the shape only.",
+      "properties": {
+        "palette": {
+          "additionalProperties": {
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "type": "string"
+          },
+          "propertyNames": {
+            "maxLength": 1,
+            "minLength": 1
+          },
+          "title": "Palette",
+          "type": "object"
+        },
+        "rows": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 32,
+          "minItems": 1,
+          "title": "Rows",
+          "type": "array"
+        },
+        "tint": {
+          "default": false,
+          "title": "Tint",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "palette",
+        "rows"
+      ],
+      "title": "Sprite",
+      "type": "object"
+    },
+    "Status": {
+      "additionalProperties": false,
+      "properties": {
+        "ok": {
+          "pattern": "^[a-z][a-z0-9-]{0,23}$",
+          "title": "Ok",
+          "type": "string"
+        },
+        "warn": {
+          "pattern": "^[a-z][a-z0-9-]{0,23}$",
+          "title": "Warn",
+          "type": "string"
+        },
+        "bad": {
+          "pattern": "^[a-z][a-z0-9-]{0,23}$",
+          "title": "Bad",
+          "type": "string"
+        },
+        "unknown": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9-]{0,23}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unknown"
+        }
+      },
+      "required": [
+        "ok",
+        "warn",
+        "bad"
+      ],
+      "title": "Status",
+      "type": "object"
+    },
+    "Switches": {
+      "additionalProperties": false,
+      "description": "Things only nexdeck's own rules can do, offered as data.",
+      "properties": {
+        "corners": {
+          "anyOf": [
+            {
+              "const": "square",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Corners"
+        },
+        "shadows": {
+          "anyOf": [
+            {
+              "const": "none",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Shadows"
+        },
+        "blur": {
+          "anyOf": [
+            {
+              "const": "off",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Blur"
+        }
+      },
+      "title": "Switches",
+      "type": "object"
+    },
+    "Tokens": {
+      "additionalProperties": false,
+      "description": "The first layer: what a theme and the look's settings set, all optional.",
+      "properties": {
+        "dark": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "pattern": "^#[0-9a-fA-F]{6}$",
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dark"
+        },
+        "light": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "pattern": "^#[0-9a-fA-F]{6}$",
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Light"
+        },
+        "accent": {
+          "anyOf": [
+            {
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Accent"
+        },
+        "font": {
+          "anyOf": [
+            {
+              "enum": [
+                "inter",
+                "system",
+                "plex",
+                "atkinson",
+                "geist",
+                "mono",
+                "pixel"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Font"
+        },
+        "radius": {
+          "anyOf": [
+            {
+              "maximum": 28,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Radius"
+        },
+        "gap": {
+          "anyOf": [
+            {
+              "maximum": 28,
+              "minimum": 4,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Gap"
+        },
+        "card_style": {
+          "anyOf": [
+            {
+              "enum": [
+                "glass",
+                "liquid",
+                "flat",
+                "outline",
+                "neon",
+                "calm"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Card Style"
+        }
+      },
+      "title": "Tokens",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "nexdeck_skin": {
+      "const": 1,
+      "title": "Nexdeck Skin",
+      "type": "integer"
+    },
+    "key": {
+      "pattern": "^[a-z0-9][a-z0-9-]{0,31}$",
+      "title": "Key",
+      "type": "string"
+    },
+    "name": {
+      "maxLength": 60,
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+    },
+    "description": {
+      "default": "",
+      "maxLength": 280,
+      "title": "Description",
+      "type": "string"
+    },
+    "author": {
+      "default": "",
+      "maxLength": 60,
+      "title": "Author",
+      "type": "string"
+    },
+    "version": {
+      "default": "1.0",
+      "pattern": "^\\d+\\.\\d+(\\.\\d+)?$",
+      "title": "Version",
+      "type": "string"
+    },
+    "tokens": {
+      "$ref": "#/$defs/Tokens"
+    },
+    "options": {
+      "items": {
+        "$ref": "#/$defs/Option"
+      },
+      "maxItems": 6,
+      "title": "Options",
+      "type": "array"
+    },
+    "sprites": {
+      "patternProperties": {
+        "^[a-z][a-z0-9-]{0,23}$": {
+          "$ref": "#/$defs/Sprite"
+        }
+      },
+      "title": "Sprites",
+      "type": "object"
+    },
+    "frames": {
+      "patternProperties": {
+        "^[a-z][a-z0-9-]{0,23}$": {
+          "$ref": "#/$defs/Frame"
+        }
+      },
+      "title": "Frames",
+      "type": "object"
+    },
+    "desk": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Desk"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "decorations": {
+      "items": {
+        "$ref": "#/$defs/Decoration"
+      },
+      "maxItems": 16,
+      "title": "Decorations",
+      "type": "array"
+    },
+    "status": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Status"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "parts": {
+      "additionalProperties": {
+        "$ref": "#/$defs/PartLook"
+      },
+      "title": "Parts",
+      "type": "object"
+    },
+    "sounds": {
+      "patternProperties": {
+        "^[a-z][a-z0-9-]{0,23}$": {
+          "$ref": "#/$defs/Sound"
+        }
+      },
+      "title": "Sounds",
+      "type": "object"
+    },
+    "switches": {
+      "$ref": "#/$defs/Switches"
+    },
+    "css": {
+      "default": "",
+      "maxLength": 20000,
+      "title": "Css",
+      "type": "string"
+    },
+    "native": {
+      "anyOf": [
+        {
+          "const": "retro",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Native"
+    }
+  },
+  "required": [
+    "nexdeck_skin",
+    "key",
+    "name"
+  ],
+  "title": "SkinFile",
+  "type": "object"
+}

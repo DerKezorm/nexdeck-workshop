@@ -1,7 +1,7 @@
 """The entries on disk, the catalog and the README list made from them.
 
-``entries/<author id>/<short name>/`` holds ``definition.yaml``, ``README.md``, ``CHANGELOG.md``, ``entry.json`` and the
-two pictures. Ownership hangs on the numeric id of the GitHub account, never on the name (KARTEN-13 EC-10). The catalog
+``entries/<author id>/<short name>/`` holds ``definition.yaml`` (``skin.json`` for a skin), ``README.md``, ``CHANGELOG.md``,
+``entry.json`` and the two pictures. Ownership hangs on the numeric id of the GitHub account, never on the name (KARTEN-13 EC-10). The catalog
 and the list in the README are made from these files alone, so they can be made again at any time.
 """
 
@@ -17,6 +17,8 @@ from .common import (
     CATEGORIES,
     ID,
     MAX_ENTRIES,
+    TYPES,
+    definition_file,
     clean,
     clean_local,
     iso,
@@ -83,11 +85,12 @@ def _readme(checked: dict[str, Any], data: dict[str, Any], description: str) -> 
         "",
         "| | |",
         "|---|---|",
-        f"| Type | {'Card' if data['type'] == 'card' else 'Connection'} |",
+        f"| Type | {TYPES[data['type']]} |",
         f"| Category | {CATEGORIES[data['category']]} |",
         f"| Version | {md(meta['version']) if meta['version'] else '-'} |",
         f"| Author | [{md(data['author_login'])}](https://github.com/{data['author_login']}) |",
-        f"| Reach | {meta['class']} |",
+        # A skin reads and presses nothing: its reach says nothing about it.
+        *([] if data["type"] == "skin" else [f"| Reach | {meta['class']} |"]),
         "",
         f"![light]({PREVIEW_LIGHT}) ![dark]({PREVIEW_DARK})",
         "",
@@ -152,7 +155,7 @@ def write_entry(
             "buttons": checked.get("buttons") or [],
         },
     }
-    write_text(target / "definition.yaml", definition)
+    write_text(target / definition_file(data["type"]), definition)
     old_log = (target / "CHANGELOG.md").read_text(encoding="utf-8") if (target / "CHANGELOG.md").is_file() else ""
     write_text(target / "CHANGELOG.md", _changelog(old_log, data["meta"]["version"], stamp[:10], clean(changes)))
     write_text(target / "README.md", _readme(checked, data, data["meta"]["description"]))
@@ -178,6 +181,7 @@ def starters(root: Path) -> set[str]:
 def _entry_in_catalog(root: Path, one: dict[str, Any], examples: set[str]) -> dict[str, Any]:
     folder = f"entries/{one['id']}"
     meta = one["meta"]
+    file = definition_file(one["type"])
     return {
         "id": one["id"],
         "type": one["type"],
@@ -192,9 +196,9 @@ def _entry_in_catalog(root: Path, one: dict[str, Any], examples: set[str]) -> di
         "class": meta["class"],
         "reads": meta["reads"],
         "buttons": meta["buttons"],
-        "sha256": sha256_of(root / folder / "definition.yaml"),
+        "sha256": sha256_of(root / folder / file),
         "files": {
-            "definition": f"{folder}/definition.yaml",
+            "definition": f"{folder}/{file}",
             "readme": f"{folder}/README.md",
             "changelog": f"{folder}/CHANGELOG.md",
             "light": f"{folder}/{PREVIEW_LIGHT}",
@@ -234,11 +238,12 @@ def _line(one: dict[str, Any]) -> str:
     name = md(plain(one["name"]))
     text = md(one["description"]).replace("  \n", " ")
     first = one["files"]
-    kind = "Card" if one["type"] == "card" else "Connection"
+    kind = TYPES[one["type"]]
     mark = " (test)" if one["id"].split("/")[1].startswith("test-") else ""
+    reach = "" if one["type"] == "skin" else f"reach: {one['class']}, "
     return (
         f"#### [{name}](entries/{one['id']}){mark}\n\n"
-        f"{kind}, version {md(one['version']) if one['version'] else '-'}, reach: {one['class']}, "
+        f"{kind}, version {md(one['version']) if one['version'] else '-'}, {reach}"
         f"by [{md(one['author']['login'])}](https://github.com/{one['author']['login']}), {one['thumbs']} thumbs up\n\n"
         f"{text}\n\n"
         f"![Preview, light]({first['light']}#gh-light-mode-only)![Preview, dark]({first['dark']}#gh-dark-mode-only)\n"

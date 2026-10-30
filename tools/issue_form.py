@@ -205,7 +205,7 @@ def build_body(
 ) -> str:
     """The body of an issue the way the form writes it, for a client that makes the issue itself (with ``version``: nexdeck's)."""
     fence = fence_of(definition)
-    fenced = f"{fence}yaml\n" + definition.rstrip("\n") + f"\n{fence}"
+    fenced = f"{fence}{'json' if type == 'skin' else 'yaml'}\n" + definition.rstrip("\n") + f"\n{fence}"
     box = f"- [{'x' if licensed else ' '}] {LICENSE_SENTENCE}"
     parts = [
         (LABELS["type"], TYPES[type]),

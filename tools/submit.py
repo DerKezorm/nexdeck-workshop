@@ -30,6 +30,7 @@ from .common import (
     DESCRIPTION_SENTENCE,
     SECRET_IN_DEMO,
     ID,
+    TYPES,
     MAX_ENTRIES,
     MAX_NEW_PER_DAY,
     MIN_CHANGES_CHARS,
@@ -41,6 +42,7 @@ from .common import (
     md,
     now,
     plain,
+    definition_file,
     version_tuple,
 )
 from .hub import GitHub, Hub
@@ -133,7 +135,7 @@ def process(ctx: Context, issue: dict[str, Any], *, force: bool = False, announc
     if last and last[1] == digest and not force and (last[0] != "deferred"):
         return None
     if not form.structured:
-        return _rejected(number, digest, ["This issue is not a submission. Use the form of the New issue page to submit a card or a connection."])
+        return _rejected(number, digest, ["This issue is not a submission. Use the form of the New issue page to submit a card, a connection or a skin."])
 
     if form.problems:
         # The shape is not the form's: what was read from it cannot be trusted to say what its author meant.
@@ -146,8 +148,8 @@ def process(ctx: Context, issue: dict[str, Any], *, force: bool = False, announc
         login = "ghost"
     reasons: list[str] = []
 
-    if form.type not in ("card", "integration"):
-        reasons.append("The type must be Card or Connection.")
+    if form.type not in TYPES:
+        reasons.append("The type must be Card, Connection or Skin.")
     if form.category not in CATEGORIES:
         reasons.append(f"The category must be one of {', '.join(CATEGORIES.values())}.")
     if not form.licensed:
@@ -164,7 +166,7 @@ def process(ctx: Context, issue: dict[str, Any], *, force: bool = False, announc
         reasons.append("Update of must be the id of an entry, such as 123456/queue-size.")
 
     checked: dict[str, Any] = {}
-    if form.type in ("card", "integration") and form.definition.strip():
+    if form.type in TYPES and form.definition.strip():
         checked = kitcheck.check(
             form.definition,
             form.type,
@@ -181,7 +183,7 @@ def process(ctx: Context, issue: dict[str, Any], *, force: bool = False, announc
     previous = entries.load_entry(ctx.root, target_id)
     if update_of and previous is None:
         reasons.append(f"There is no entry {update_of} to update.")
-    stored = entries.entry_dir(ctx.root, target_id) / "definition.yaml"
+    stored = entries.entry_dir(ctx.root, target_id) / definition_file(checked["type"])
     if previous is not None and number in previous.get("issues", []) and stored.is_file() and stored.read_text(encoding="utf-8") == form.definition:
         # Taken in an earlier run whose comment never came out (the files were pushed, the post failed): say it again.
         return _accepted(ctx, number, digest, target_id, previous, updated=len(previous["issues"]) > 1)
@@ -192,7 +194,7 @@ def process(ctx: Context, issue: dict[str, Any], *, force: bool = False, announc
         if target_id.split("/", 1)[1] != slug:
             reasons.append(f"The short name of an update stays {target_id.split('/', 1)[1]}.")
         if previous["type"] != checked["type"]:
-            reasons.append(f"This entry is a {'card' if previous['type'] == 'card' else 'connection'}; an update cannot change that.")
+            reasons.append(f"This entry is a {TYPES[previous['type']].lower()}; an update cannot change that.")
         removed = previous.get("removed")
         if removed and removed.get("level") != "withdrawn":
             reasons.append("This entry was removed by a maintainer. Ask a maintainer to bring it back.")
@@ -259,7 +261,7 @@ def _accepted(ctx: Context, number: int, digest: str, target_id: str, data: dict
         f"**Accepted.** `{target_id}` is {'updated' if updated else 'in the workshop now'}.",
         "",
         f"- Version: {meta['version'] or '-'}",
-        f"- Reach: {meta['class']} (read: only reads; buttons: presses buttons; login: signs in)",
+        *([] if data["type"] == "skin" else [f"- Reach: {meta['class']} (read: only reads; buttons: presses buttons; login: signs in)"]),
         f"- Category: {CATEGORIES[data['category']]}",
         f"- Entry: {link}",
     ]

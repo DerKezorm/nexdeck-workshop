@@ -1,10 +1,11 @@
 # nexdeck workshop
 
-Custom cards and own connections for [nexdeck](https://github.com/DerKezorm/nexdeck), shared by the people who made them.
+Custom cards, own connections and skins for [nexdeck](https://github.com/DerKezorm/nexdeck), shared by the people who made them.
 
 A **card** shows what you pick out of the answer of a service: a number, a few numbers, a list, a wall of pictures, or a layout of blocks.
 A **connection** teaches nexdeck to talk to an app it does not know: the address, the sign-in and what is worth reading.
-Neither one contains code. They are data that nexdeck checks and draws with its own parts.
+A **skin** changes how nexdeck looks: colours, pixel pictures, frames, motions and a style sheet that names nexdeck's parts.
+None of them contains code. They are data that nexdeck checks and draws with its own parts; a skin is compiled by every nexdeck that installs it.
 
 Nothing here is installed by itself. In nexdeck, an administrator switches on the Card shop, browses this catalog and installs what they want.
 Without nexdeck you can browse the list below.
@@ -111,7 +112,7 @@ Connects nexdeck to Wallabag, the read-it-later service you host yourself. It si
 |---|---|
 | `entries/<github user id>/<short name>/` | One entry: `definition.yaml`, `README.md`, `CHANGELOG.md`, `entry.json`, two preview pictures |
 | `catalog.json` | The catalog nexdeck reads, made by the actions |
-| `schema/` | The JSON schemas of a card and of a connection |
+| `schema/` | The JSON schemas of a card, a connection and a skin |
 | `kit/` | The check and the drawing page, taken from nexdeck (see `kit/VERSION`) |
 | `tools/` | The code of the actions |
 | `state.json` | The moment up to which the last run took up issues and comments (made by the actions) |
