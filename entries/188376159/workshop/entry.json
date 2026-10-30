@@ -1,0 +1,31 @@
+{
+  "type": "skin",
+  "author_id": 188376159,
+  "author_login": "DerKezorm",
+  "category": "other",
+  "based_on": null,
+  "issue": 51,
+  "issues": [
+    51
+  ],
+  "created_at": "2026-10-30T08:32:07Z",
+  "updated_at": "2026-10-30T08:32:07Z",
+  "removed": null,
+  "thumbs": 0,
+  "discussion": {
+    "id": "D_kwDOVaX69s4Aqqs0",
+    "url": "https://github.com/DerKezorm/nexdeck-workshop/discussions/56"
+  },
+  "test": false,
+  "meta": {
+    "slug": "workshop",
+    "name": "Workshop",
+    "description": "Earthy Gruvbox colours, flat cards and nearly square corners, packed close together.",
+    "version": "1.0.0",
+    "min_nexdeck": "1.1.0",
+    "requires": [],
+    "class": "read",
+    "reads": [],
+    "buttons": []
+  }
+}

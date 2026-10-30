@@ -127,6 +127,22 @@ Calm graphite greys and the Geist type, with quiet cards that keep out of the wa
 
 ![Preview, light](entries/188376159/quiet/preview-light.png#gh-light-mode-only)![Preview, dark](entries/188376159/quiet/preview-dark.png#gh-dark-mode-only)
 
+#### [Retro console](entries/188376159/console)
+
+Skin, version 1.0.0, by [DerKezorm](https://github.com/DerKezorm), 0 thumbs up
+
+Bold colours, thick round frames and bricks behind the cards, like a game console of the nineties.
+
+![Preview, light](entries/188376159/console/preview-light.png#gh-light-mode-only)![Preview, dark](entries/188376159/console/preview-dark.png#gh-dark-mode-only)
+
+#### [Rosé evening](entries/188376159/evening)
+
+Skin, version 1.0.0, by [DerKezorm](https://github.com/DerKezorm), 0 thumbs up
+
+Soft rosé colours from Rosé Pine with glass cards, round corners and wide gaps.
+
+![Preview, light](entries/188376159/evening/preview-light.png#gh-light-mode-only)![Preview, dark](entries/188376159/evening/preview-dark.png#gh-dark-mode-only)
+
 #### [Shiori](entries/188376159/shiori)
 
 Connection, version -, reach: login, by [DerKezorm](https://github.com/DerKezorm), 0 thumbs up
@@ -142,6 +158,14 @@ Connection, version -, reach: login, by [DerKezorm](https://github.com/DerKezorm
 Connects nexdeck to Wallabag, the read-it-later service you host yourself. It signs in with the API client and the account of the Wallabag user, the way the apps of Wallabag do, and keeps the session. Your cards can then read the entries and the tags.
 
 ![Preview, light](entries/188376159/wallabag/preview-light.png#gh-light-mode-only)![Preview, dark](entries/188376159/wallabag/preview-dark.png#gh-dark-mode-only)
+
+#### [Workshop](entries/188376159/workshop)
+
+Skin, version 1.0.0, by [DerKezorm](https://github.com/DerKezorm), 0 thumbs up
+
+Earthy Gruvbox colours, flat cards and nearly square corners, packed close together.
+
+![Preview, light](entries/188376159/workshop/preview-light.png#gh-light-mode-only)![Preview, dark](entries/188376159/workshop/preview-dark.png#gh-dark-mode-only)
 
 
 <!-- entries:end -->

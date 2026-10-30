@@ -1,6 +1,6 @@
 {
   "format": 1,
-  "generated_at": "2026-10-30T08:31:08Z",
+  "generated_at": "2026-10-30T08:32:07Z",
   "entries": [
     {
       "id": "188376159/castle",
@@ -31,6 +31,70 @@
       "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/50",
       "based_on": null,
       "updated_at": "2026-10-30T08:31:08Z",
+      "removed": null,
+      "starter": false
+    },
+    {
+      "id": "188376159/console",
+      "type": "skin",
+      "slug": "console",
+      "name": "Retro console",
+      "description": "Bold colours, thick round frames and bricks behind the cards, like a game console of the nineties.",
+      "author": {
+        "id": 188376159,
+        "login": "DerKezorm"
+      },
+      "version": "1.0.0",
+      "min_nexdeck": "1.1.0",
+      "category": "other",
+      "requires": [],
+      "class": "read",
+      "reads": [],
+      "buttons": [],
+      "sha256": "b52ddb0e4d15e79537f36ceb38eab0130b37fd1a3136bf3ef4d173ec531f9800",
+      "files": {
+        "definition": "entries/188376159/console/skin.json",
+        "readme": "entries/188376159/console/README.md",
+        "changelog": "entries/188376159/console/CHANGELOG.md",
+        "light": "entries/188376159/console/preview-light.png",
+        "dark": "entries/188376159/console/preview-dark.png"
+      },
+      "thumbs": 0,
+      "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/54",
+      "based_on": null,
+      "updated_at": "2026-10-30T08:32:07Z",
+      "removed": null,
+      "starter": false
+    },
+    {
+      "id": "188376159/evening",
+      "type": "skin",
+      "slug": "evening",
+      "name": "Rosé evening",
+      "description": "Soft rosé colours from Rosé Pine with glass cards, round corners and wide gaps.",
+      "author": {
+        "id": 188376159,
+        "login": "DerKezorm"
+      },
+      "version": "1.0.0",
+      "min_nexdeck": "1.1.0",
+      "category": "other",
+      "requires": [],
+      "class": "read",
+      "reads": [],
+      "buttons": [],
+      "sha256": "8d2617363582a7e25d5aecf9a658cd5d200e0085e6e4ff2dcbe3a54128fad48c",
+      "files": {
+        "definition": "entries/188376159/evening/skin.json",
+        "readme": "entries/188376159/evening/README.md",
+        "changelog": "entries/188376159/evening/CHANGELOG.md",
+        "light": "entries/188376159/evening/preview-light.png",
+        "dark": "entries/188376159/evening/preview-dark.png"
+      },
+      "thumbs": 0,
+      "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/55",
+      "based_on": null,
+      "updated_at": "2026-10-30T08:32:07Z",
       "removed": null,
       "starter": false
     },
@@ -552,6 +616,38 @@
       "updated_at": "2026-10-29T00:46:17Z",
       "removed": null,
       "starter": true
+    },
+    {
+      "id": "188376159/workshop",
+      "type": "skin",
+      "slug": "workshop",
+      "name": "Workshop",
+      "description": "Earthy Gruvbox colours, flat cards and nearly square corners, packed close together.",
+      "author": {
+        "id": 188376159,
+        "login": "DerKezorm"
+      },
+      "version": "1.0.0",
+      "min_nexdeck": "1.1.0",
+      "category": "other",
+      "requires": [],
+      "class": "read",
+      "reads": [],
+      "buttons": [],
+      "sha256": "c06c82816cf22cda6190a857c6149df090fa81c7eab4a647e7a0c20bb271dcf5",
+      "files": {
+        "definition": "entries/188376159/workshop/skin.json",
+        "readme": "entries/188376159/workshop/README.md",
+        "changelog": "entries/188376159/workshop/CHANGELOG.md",
+        "light": "entries/188376159/workshop/preview-light.png",
+        "dark": "entries/188376159/workshop/preview-dark.png"
+      },
+      "thumbs": 0,
+      "discussion": "https://github.com/DerKezorm/nexdeck-workshop/discussions/56",
+      "based_on": null,
+      "updated_at": "2026-10-30T08:32:07Z",
+      "removed": null,
+      "starter": false
     }
   ]
 }

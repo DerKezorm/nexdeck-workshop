@@ -1,0 +1,47 @@
+{
+  "nexdeck_skin": 1,
+  "key": "workshop",
+  "name": "Workshop",
+  "description": "Earthy Gruvbox colours, flat cards and nearly square corners, packed close together.",
+  "author": "DerKezorm",
+  "version": "1.0.0",
+  "tokens": {
+    "card_style": "flat",
+    "radius": 4,
+    "gap": 8,
+    "dark": {
+      "bg": "#1d2021",
+      "bg-elev": "#282828",
+      "surface": "#32302f",
+      "surface-hover": "#3c3836",
+      "border": "#3c3836",
+      "border-strong": "#504945",
+      "text": "#ebdbb2",
+      "text-muted": "#d5c4a1",
+      "text-faint": "#bdae93",
+      "accent": "#fe8019",
+      "on-accent": "#1d2021",
+      "ok": "#b8bb26",
+      "warn": "#fabd2f",
+      "bad": "#fb6c5c",
+      "unknown": "#a89984"
+    },
+    "light": {
+      "bg": "#f2e5bc",
+      "bg-elev": "#fbf1c7",
+      "surface": "#fdf6d9",
+      "surface-hover": "#ebdbb2",
+      "border": "#ebdbb2",
+      "border-strong": "#d5c4a1",
+      "text": "#3c3836",
+      "text-muted": "#504945",
+      "text-faint": "#665c54",
+      "accent": "#af3a03",
+      "on-accent": "#ffffff",
+      "ok": "#6a680c",
+      "warn": "#885b0f",
+      "bad": "#9d0006",
+      "unknown": "#6d625a"
+    }
+  }
+}

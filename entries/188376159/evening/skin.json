@@ -1,0 +1,47 @@
+{
+  "nexdeck_skin": 1,
+  "key": "evening",
+  "name": "Rosé evening",
+  "description": "Soft rosé colours from Rosé Pine with glass cards, round corners and wide gaps.",
+  "author": "DerKezorm",
+  "version": "1.0.0",
+  "tokens": {
+    "card_style": "glass",
+    "radius": 20,
+    "gap": 16,
+    "dark": {
+      "bg": "#191724",
+      "bg-elev": "#1f1d2e",
+      "surface": "#26233a",
+      "surface-hover": "#2f2c45",
+      "border": "#2a273f",
+      "border-strong": "#403d52",
+      "text": "#e0def4",
+      "text-muted": "#c4c0dd",
+      "text-faint": "#a8a4c2",
+      "accent": "#ebbcba",
+      "on-accent": "#191724",
+      "ok": "#9ccfd8",
+      "warn": "#f6c177",
+      "bad": "#eb6f92",
+      "unknown": "#908caa"
+    },
+    "light": {
+      "bg": "#f2e9e1",
+      "bg-elev": "#faf4ed",
+      "surface": "#fffaf3",
+      "surface-hover": "#f4ede8",
+      "border": "#dfdad9",
+      "border-strong": "#cecacd",
+      "text": "#575279",
+      "text-muted": "#5f5a82",
+      "text-faint": "#686485",
+      "accent": "#735d8f",
+      "on-accent": "#ffffff",
+      "ok": "#286983",
+      "warn": "#915b10",
+      "bad": "#a14e65",
+      "unknown": "#696580"
+    }
+  }
+}
